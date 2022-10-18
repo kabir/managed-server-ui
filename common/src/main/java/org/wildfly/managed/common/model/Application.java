@@ -27,24 +27,4 @@ public class Application extends PanacheEntity {
     public void setState(ApplicationState state) {
         this.state = state;
     }
-
-    public static Application create(String name, ApplicationState state) {
-        Application app = new Application();
-        app.name = name;
-        app.state = state;
-        persist(app);
-        return app;
-    }
-
-    public static Application findByName(String name) {
-        return find("name", name).firstResult();
-    }
-
-    public static void delete(String name) {
-        delete("name", name);
-    }
-
-    public static List<Application> all() {
-        return listAll();
-    }
 }
