@@ -20,15 +20,20 @@ import java.util.List;
                 AppCommand.ListCommand.class
         })
 public class AppCommand {
-
+    private static final String INDENT = "  ";
     @Command(name = "create", description = "Creates a new application", mixinStandardHelpOptions = true)
     static class CreateCommand implements Runnable {
+        @RestClient
+        ApplicationService applicationService;
+
         @CommandLine.Parameters(paramLabel = "<name>", description = "Application name. Must be unique.")
         String name;
 
         @Override
         public void run() {
-            System.out.println("create " + name);
+            Application application = new Application();
+            application.setName(name);
+            applicationService.create(application);
         }
     }
 
@@ -68,8 +73,12 @@ public class AppCommand {
         @Override
         public void run() {
             List<Application> applications = applicationService.list();
+            System.out.println("Applications:");
             if (applications.size() == 0) {
-                System.out.println("No applications");
+                System.out.println(INDENT + "No applications");
+            }
+            for (Application application : applications) {
+                System.out.println(INDENT + application.getName());
             }
         }
     }

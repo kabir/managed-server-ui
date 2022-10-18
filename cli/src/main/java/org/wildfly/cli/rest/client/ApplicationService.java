@@ -4,6 +4,7 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.wildfly.managed.common.model.Application;
 
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import java.util.List;
 
@@ -12,4 +13,7 @@ import java.util.List;
 public interface ApplicationService {
     @GET
     public List<Application> list();
+
+    @POST
+    Application create(Application application);
 }

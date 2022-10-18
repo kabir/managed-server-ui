@@ -2,21 +2,18 @@ package org.wildfly.managed.repo;
 
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import org.wildfly.managed.common.model.Application;
-import org.wildfly.managed.common.model.ApplicationState;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.transaction.Transactional;
 import java.util.List;
 
 @ApplicationScoped
 public class ApplicationRepo implements PanacheRepository<Application> {
 
-
-    public Application create(String name, ApplicationState state) {
-        Application app = new Application();
-        app.setName(name);
-        app.setState(state);
-        persist(app);
-        return app;
+    @Transactional
+    public Application create(Application application) {
+        persistAndFlush(application);
+        return application;
     }
 
     public Application findByName(String name) {
