@@ -1,17 +1,13 @@
 package org.wildfly.cli.command;
 
-import io.quarkus.picocli.runtime.annotations.TopCommand;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.wildfly.cli.rest.client.ApplicationService;
 import org.wildfly.managed.common.model.Application;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
 import java.util.List;
 
-//@TopCommand
 @Command(
         name = "app",
         description = "Application commands",
@@ -24,15 +20,6 @@ import java.util.List;
                 AppCommand.ListCommand.class
         })
 public class AppCommand {
-
-//
-//    @RestClient
-//    ApplicationService applicationService;
-//
-//    @PostConstruct
-//    public void init() {
-//        System.out.println("---> INIT");
-//    }
 
     @Command(name = "create", description = "Creates a new application", mixinStandardHelpOptions = true)
     static class CreateCommand implements Runnable {
@@ -77,15 +64,12 @@ public class AppCommand {
     static class ListCommand implements Runnable {
         @RestClient
         ApplicationService applicationService;
-//        @Inject
-//        TestBean testBean;
 
         @Override
         public void run() {
-//            System.out.println("---> " + testBean);
             List<Application> applications = applicationService.list();
-            if (applications == null) {
-                System.out.println("\n\tNo applications");
+            if (applications.size() == 0) {
+                System.out.println("No applications");
             }
         }
     }
