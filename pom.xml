@@ -20,6 +20,7 @@
 
   <modules>
     <module>backend</module>
+    <module>common</module>
     <module>cli</module>
   </modules>
 
@@ -31,6 +32,11 @@
         <version>${quarkus.platform.version}</version>
         <type>pom</type>
         <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>${project.groupId}</groupId>
+        <artifactId>managed-server-ui-common</artifactId>
+        <version>${project.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

@@ -1,4 +1,4 @@
-package org.wildfly.managed.model;
+package org.wildfly.managed.common.model;
 
 public enum ApplicationState {
     INITIAL,

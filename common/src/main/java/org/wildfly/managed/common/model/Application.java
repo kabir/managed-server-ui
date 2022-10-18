@@ -1,4 +1,4 @@
-package org.wildfly.managed.model;
+package org.wildfly.managed.common.model;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 
@@ -28,7 +28,7 @@ public class Application extends PanacheEntity {
         this.state = state;
     }
 
-    static Application create(String name, ApplicationState state) {
+    public static Application create(String name, ApplicationState state) {
         Application app = new Application();
         app.name = name;
         app.state = state;
@@ -36,15 +36,15 @@ public class Application extends PanacheEntity {
         return app;
     }
 
-    static Application findByName(String name) {
+    public static Application findByName(String name) {
         return find("name", name).firstResult();
     }
 
-    static void delete(String name) {
+    public static void delete(String name) {
         delete("name", name);
     }
 
-    static List<Application> all() {
+    public static List<Application> all() {
         return listAll();
     }
 }
