@@ -10,17 +10,35 @@
   <artifactId>managed-server-ui-cli</artifactId>
   <dependencies>
     <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>managed-server-ui-common</artifactId>
+    </dependency>
+    <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-picocli</artifactId>
     </dependency>
     <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-rest-client-reactive-jackson</artifactId>
+    </dependency>
+    <dependency>
       <groupId>info.picocli</groupId>
       <artifactId>picocli-codegen</artifactId>
+<!--
       <scope>provided</scope>
+-->
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-arc</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-jdbc-h2</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-agroal</artifactId>
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
@@ -50,6 +68,14 @@
           <compilerArgs>
             <arg>-parameters</arg>
           </compilerArgs>
+          <annotationProcessorPaths>
+            <!-- Turns off adding the META-INF/panache-archive.marker file -->
+            <annotationProcessorPath>
+              <groupId>org.hibernate</groupId>
+              <artifactId>hibernate-jpamodelgen</artifactId>
+              <version>${hibernate.version}</version>
+            </annotationProcessorPath>
+          </annotationProcessorPaths>
         </configuration>
       </plugin>
       <plugin>

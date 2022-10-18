@@ -4,7 +4,6 @@ import io.quarkus.hibernate.orm.panache.PanacheEntity;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import java.util.List;
 
 @Entity
 public class Application extends PanacheEntity {

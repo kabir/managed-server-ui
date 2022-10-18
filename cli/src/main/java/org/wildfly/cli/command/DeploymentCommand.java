@@ -1,4 +1,4 @@
-package org.wildfly.cli.app;
+package org.wildfly.cli.command;
 
 import picocli.CommandLine;
 
