@@ -97,8 +97,8 @@ public class AppCommand {
             }
             String activeApp = cliContext.getActiveApp();
             for (Application application : applications) {
-                String activeMarker = application.getName().equals(activeApp) ? " *" : "";
-                System.out.println(INDENT + application.getName() + activeMarker);
+                String activeMarker = application.getName().equals(activeApp) ? "* " : "";
+                System.out.println(INDENT + activeMarker + application.getName());
             }
         }
     }
@@ -123,9 +123,15 @@ public class AppCommand {
         public void run() {
             System.out.println("----> " + path);
             if (!Files.exists(path)) {
-                throw new IllegalArgumentException(path + " not found");
+                System.out.println(path + " not found");
+                System.exit(1);
             }
-            DeploymentDto dto = new DeploymentDto(path, "test");
+            if (Files.isDirectory(path)) {
+                System.out.println(path + " is a directory");
+                System.exit(1);
+            }
+            String fileName = path.getFileName().toString();
+            DeploymentDto dto = new DeploymentDto(path, fileName);
             applicationService.tempUpload(dto);
         }
     }
