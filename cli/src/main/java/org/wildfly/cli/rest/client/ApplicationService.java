@@ -16,7 +16,7 @@ import java.util.List;
 @RegisterRestClient(configKey = "managed-server-ui-backend")
 public interface ApplicationService {
     @GET
-    public List<Application> list();
+    List<Application> list();
 
     @POST
     Application create(Application application);
@@ -24,10 +24,6 @@ public interface ApplicationService {
     @POST
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Produces(MediaType.TEXT_PLAIN)
-    @Path("upload")
+    @Path("/upload")
     void tempUpload(@MultipartForm DeploymentDto deploymentDto);
-
-    @GET
-    @Path("temp")
-    void temp();
 }

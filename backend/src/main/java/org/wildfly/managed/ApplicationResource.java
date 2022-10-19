@@ -38,16 +38,9 @@ public class ApplicationResource {
     @POST
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Produces(MediaType.TEXT_PLAIN)
-    @Path("upload")
-    void tempUpload(@MultipartForm DeploymentData data) {
+    @Path("/upload")
+    public void tempUpload(@MultipartForm DeploymentData data) {
         java.nio.file.Path path = data.file.uploadedFile();
         System.out.println("----> " + path);
     }
-
-    @GET
-    @Path("temp")
-    void temp() {
-        System.out.println("----> TEMP!!!");
-    }
-
 }
