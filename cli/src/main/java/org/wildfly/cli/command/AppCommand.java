@@ -32,6 +32,15 @@ public class AppCommand {
 
         @Inject
         CliContext cliContext;
+
+        protected String validateActiveApp() {
+            String activeApp = cliContext.getActiveApp();
+            if (activeApp == null) {
+                System.err.println("No active application is set. Cannot deploy.");
+                System.exit(1);
+            }
+            return activeApp;
+        }
     }
 
     private static final String INDENT = "  ";
@@ -66,8 +75,17 @@ public class AppCommand {
 
     @Command(name = "delete", description = "Deletes an application", mixinStandardHelpOptions = true)
     static class DeleteCommand extends BaseAppCommand {
+        @CommandLine.Parameters(paramLabel = "<name>", description = "Application name to delete.")
+        String name;
+
         @Override
         public void run() {
+            String activeApp = cliContext.getActiveApp();
+            applicationService.delete(name);
+            System.out.println("Application '" + name + "' deleted");
+            if (name.equals(activeApp)) {
+                System.out.println("Since this was the currently active applicaiton, the active application has been cleared");
+            }
 
         }
     }
@@ -107,11 +125,11 @@ public class AppCommand {
     static class DeployCommand extends BaseAppCommand {
         @Override
         public void run() {
-
+            validateActiveApp();
         }
     }
 
-    @Command(name = "upload", description = "TEMP", mixinStandardHelpOptions = true)
+    @Command(name = "upload", description = "Upload", mixinStandardHelpOptions = true)
     static class UploadCommand extends BaseAppCommand {
         @RestClient
         ApplicationService applicationService;
@@ -121,20 +139,20 @@ public class AppCommand {
 
         @Override
         public void run() {
-            System.out.println("----> " + path);
+            String activeApp = validateActiveApp();
+
             if (!Files.exists(path)) {
-                System.out.println(path + " not found");
+                System.err.println(path + " not found");
                 System.exit(1);
             }
             if (Files.isDirectory(path)) {
-                System.out.println(path + " is a directory");
+                System.err.println(path + " is a directory");
                 System.exit(1);
             }
-            String fileName = path.getFileName().toString();
-            DeploymentDto dto = new DeploymentDto(path, fileName);
-            applicationService.tempUpload(dto);
+            //String fileName = path.getFileName().toString();
+            DeploymentDto dto = new DeploymentDto(path/*, fileName*/);
+            applicationService.upload(activeApp, dto);
         }
     }
-
 
 }

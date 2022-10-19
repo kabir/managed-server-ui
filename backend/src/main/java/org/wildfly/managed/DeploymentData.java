@@ -11,9 +11,5 @@ public class DeploymentData {
     @PartType(MediaType.APPLICATION_OCTET_STREAM)
     public FileUpload file;
 
-    @RestForm("fileName")
-    @PartType(MediaType.TEXT_PLAIN)
-    public String fileName;
-
 
 }

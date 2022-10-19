@@ -12,13 +12,13 @@ public class DeploymentDto {
     @PartType(MediaType.APPLICATION_OCTET_STREAM)
     public Path file;
 
-    @FormParam("fileName")
-    @PartType(MediaType.TEXT_PLAIN)
-    public String fileName;
-
-    public DeploymentDto(Path file, String fileName) {
+//    @FormParam("fileName")
+//    @PartType(MediaType.TEXT_PLAIN)
+//    public String fileName;
+//
+    public DeploymentDto(Path file/*, String fileName*/) {
         this.file = file;
-        this.fileName = fileName;
+        //this.fileName = fileName;
     }
 
     public DeploymentDto() {

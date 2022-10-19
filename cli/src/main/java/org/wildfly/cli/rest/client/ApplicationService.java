@@ -5,6 +5,7 @@ import org.jboss.resteasy.reactive.MultipartForm;
 import org.wildfly.managed.common.model.Application;
 
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -21,9 +22,13 @@ public interface ApplicationService {
     @POST
     Application create(Application application);
 
+    @DELETE
+    @Path("/{name}")
+    void delete(String name);
+
     @POST
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Produces(MediaType.TEXT_PLAIN)
-    @Path("/upload")
-    void tempUpload(@MultipartForm DeploymentDto deploymentDto);
+    @Path("/{name}/upload")
+    void upload(String name, @MultipartForm DeploymentDto deploymentDto);
 }

@@ -48,8 +48,13 @@ public class CliContext {
 
 
     private void setValue(ContextKey key, String value) {
+        Path path = contextDir.resolve(key.fileName);
         try {
-            Files.write(contextDir.resolve(key.fileName), value.getBytes(StandardCharsets.UTF_8));
+            if (value == null) {
+                Files.delete(path);
+            } else {
+                Files.write(path, value.getBytes(StandardCharsets.UTF_8));
+            }
             values.put(key, value);
         } catch (IOException e) {
             throw new IllegalStateException("Error setting value", e);
