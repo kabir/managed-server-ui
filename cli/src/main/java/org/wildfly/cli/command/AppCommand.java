@@ -2,10 +2,14 @@ package org.wildfly.cli.command;
 
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.wildfly.cli.rest.client.ApplicationService;
+import org.wildfly.cli.rest.client.DeploymentDto;
 import org.wildfly.managed.common.model.Application;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 
+import java.io.FileNotFoundException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 @Command(
@@ -17,7 +21,9 @@ import java.util.List;
                 AppCommand.GetCommand.class,
                 AppCommand.CreateCommand.class,
                 AppCommand.DeleteCommand.class,
-                AppCommand.ListCommand.class
+                AppCommand.ListCommand.class,
+                // Temp
+                AppCommand.TempUploadCommand.class,
         })
 public class AppCommand {
     private static final String INDENT = "  ";
@@ -90,5 +96,28 @@ public class AppCommand {
 
         }
     }
+
+    @Command(name = "upload", description = "TEMP", mixinStandardHelpOptions = true)
+    static class TempUploadCommand implements Runnable {
+        @RestClient
+        ApplicationService applicationService;
+
+        @CommandLine.Parameters(paramLabel = "<path>", description = "Path to the file.")
+        java.nio.file.Path path;
+
+        @Override
+        public void run() {
+            System.out.println("Try temp");
+            applicationService.temp();
+
+            System.out.println("----> " + path);
+            if (!Files.exists(path)) {
+                throw new IllegalArgumentException(path + " not found");
+            }
+            DeploymentDto dto = new DeploymentDto(path, "test");
+            applicationService.tempUpload(dto);
+        }
+    }
+
 
 }
