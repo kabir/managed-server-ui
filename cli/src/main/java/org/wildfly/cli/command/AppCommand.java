@@ -23,6 +23,7 @@ import java.util.List;
                 AppCommand.DeleteCommand.class,
                 AppCommand.ListCommand.class,
                 AppCommand.UploadCommand.class,
+                AppCommand.DeployCommand.class
         })
 public class AppCommand {
 
@@ -121,13 +122,6 @@ public class AppCommand {
         }
     }
 
-    @Command(name = "deploy", description = "Deploy the application", mixinStandardHelpOptions = true)
-    static class DeployCommand extends BaseAppCommand {
-        @Override
-        public void run() {
-            validateActiveApp();
-        }
-    }
 
     @Command(name = "upload", description = "Upload", mixinStandardHelpOptions = true)
     static class UploadCommand extends BaseAppCommand {
@@ -152,6 +146,19 @@ public class AppCommand {
             //String fileName = path.getFileName().toString();
             DeploymentDto dto = new DeploymentDto(path/*, fileName*/);
             applicationService.upload(activeApp, dto);
+        }
+    }
+
+    @Command(name = "deploy", description = "Deploy the application", mixinStandardHelpOptions = true)
+    static class DeployCommand extends BaseAppCommand {
+        @RestClient
+        ApplicationService applicationService;
+
+        @Override
+        public void run() {
+            String activeApp = validateActiveApp();
+
+            applicationService.deploy(activeApp);
         }
     }
 

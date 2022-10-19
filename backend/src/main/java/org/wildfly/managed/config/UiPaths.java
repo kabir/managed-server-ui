@@ -32,6 +32,9 @@ public class UiPaths {
         if (!Files.exists(scriptsDir)) {
             throw new IllegalStateException("Scripts dir does not exist: " + scriptsDir);
         }
+
+        System.out.println("-> workingDir " + workingDir);
+        System.out.println("-> scriptsDir " + scriptsDir);
     }
 
     public Path getWorkingDir() {
@@ -40,7 +43,7 @@ public class UiPaths {
 
     public Path getApplicationDir(String appName) {
         try {
-            Path path = workingDir.resolve(appName);
+            Path path = workingDir.resolve(appName).toAbsolutePath();
             if (!Files.exists(path)) {
                 Files.createDirectories(path);
             }
@@ -48,5 +51,9 @@ public class UiPaths {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public Path getScriptsDir() {
+        return scriptsDir;
     }
 }
