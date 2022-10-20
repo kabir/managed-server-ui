@@ -4,6 +4,7 @@ import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.wildfly.cli.CliContext;
 import org.wildfly.cli.rest.client.ApplicationService;
 import org.wildfly.cli.rest.client.DeploymentDto;
+import org.wildfly.cli.util.TableOutputter;
 import org.wildfly.managed.common.model.Application;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -113,11 +114,20 @@ public class AppCommand {
             System.out.println("Applications:");
             if (applications.size() == 0) {
                 System.out.println(INDENT + "No applications");
-            }
-            String activeApp = cliContext.getActiveApp();
-            for (Application application : applications) {
-                String activeMarker = application.getName().equals(activeApp) ? "* " : "";
-                System.out.println(INDENT + activeMarker + application.getName() + " " + application.getState());
+            } else {
+                String activeApp = cliContext.getActiveApp();
+                TableOutputter outputter = TableOutputter.builder()
+                        .addColumn(30, "Application")
+                        .addColumn(15, "Status")
+                        .build();
+                for (Application application : applications) {
+
+                    String activeMarker = application.getName().equals(activeApp) ? "* " : "";
+                    //System.out.println(activeMarker + application.getName() + " " + application.getState());
+                    outputter.addRow()
+                            .addColumns(activeMarker + application.getName(), application.getState().name())
+                            .output();
+                }
             }
         }
     }

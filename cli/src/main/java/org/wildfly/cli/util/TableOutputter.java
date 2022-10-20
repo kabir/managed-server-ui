@@ -53,14 +53,15 @@ public class TableOutputter {
     public class Row{
         private final List<String> columns = new ArrayList<>();
 
-        Row addColumns(String... columns) {
+        public Row addColumns(String... columns) {
             for (String column : columns) {
                 addColumn(column);
             }
             return this;
         }
 
-        Row addColumn(String column) {
+        public Row addColumn(String column) {
+
             int maxSize = columnWidths.get(columns.size());
             if (column.length() > maxSize) {
                 column = column.substring(0, maxSize);
