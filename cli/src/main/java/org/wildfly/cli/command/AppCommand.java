@@ -117,7 +117,7 @@ public class AppCommand {
             String activeApp = cliContext.getActiveApp();
             for (Application application : applications) {
                 String activeMarker = application.getName().equals(activeApp) ? "* " : "";
-                System.out.println(INDENT + activeMarker + application.getName());
+                System.out.println(INDENT + activeMarker + application.getName() + " " + application.getState());
             }
         }
     }
