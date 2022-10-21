@@ -55,7 +55,7 @@ public class AppCommand {
         @Override
         public void run() {
             Application application = new Application();
-            application.setName(name);
+            application.name = name;
             applicationService.create(application);
             cliContext.setActiveApp(name);
             System.out.println("Application " + name + " created and set as the active application.");
@@ -86,7 +86,7 @@ public class AppCommand {
             applicationService.delete(name);
             System.out.println("Application '" + name + "' deleted");
             if (name.equals(activeApp)) {
-                System.out.println("Since this was the currently active applicaiton, the active application has been cleared");
+                System.out.println("Since this was the currently active application, the active application has been cleared");
             }
 
         }
@@ -122,10 +122,9 @@ public class AppCommand {
                         .build();
                 for (Application application : applications) {
 
-                    String activeMarker = application.getName().equals(activeApp) ? "* " : "";
-                    //System.out.println(activeMarker + application.getName() + " " + application.getState());
+                    String activeMarker = application.name.equals(activeApp) ? "* " : "";
                     outputter.addRow()
-                            .addColumns(activeMarker + application.getName(), application.getState().name())
+                            .addColumns(activeMarker + application.name, application.state.name())
                             .output();
                 }
             }

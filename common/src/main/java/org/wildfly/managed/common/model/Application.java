@@ -4,26 +4,17 @@ import io.quarkus.hibernate.orm.panache.PanacheEntity;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.OneToMany;
+import java.util.Collection;
+import java.util.HashSet;
 
 @Entity
 public class Application extends PanacheEntity {
     @Column(unique = true)
-    String name;
-    ApplicationState state = ApplicationState.INITIAL;
+    public String name;
+    public ApplicationState state = ApplicationState.INITIAL;
 
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public ApplicationState getState() {
-        return state;
-    }
-
-    public void setState(ApplicationState state) {
-        this.state = state;
-    }
+    @OneToMany(mappedBy = "application")
+    public Collection<AppArchive> appArchives = new HashSet<>();
 }
+

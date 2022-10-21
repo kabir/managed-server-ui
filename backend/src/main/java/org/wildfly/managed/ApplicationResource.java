@@ -21,6 +21,7 @@ import java.util.List;
 
 @Path("/app")
 public class ApplicationResource {
+
     private static final String CREATE_APPLICATION_SCRIPT = "create-application.sh";
     private static final String UPDATE_APPLICATION_SCRIPT = "update-application.sh";
 
@@ -38,29 +39,33 @@ public class ApplicationResource {
     @POST
     public Application create(Application application) {
         System.out.println("----> Creating " + application);
-        System.out.println(application.getName());
+        System.out.println(application.name);
         return applicationRepo.create(application);
     }
 
     @DELETE
-    @Path("/{name}")
+    @Path("/{appName}")
     @Transactional
-    public Response delete(String name) {
-        Application application = applicationRepo.findByName(name);
+    public Response delete(String appName) {
+        Application application = applicationRepo.findByName(appName);
         if (application == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
 
-        applicationRepo.delete(name);
+        applicationRepo.delete(appName);
         return Response.status(Response.Status.NO_CONTENT).build();
     }
 
     @POST
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Produces(MediaType.TEXT_PLAIN)
-    @Path("/{name}/upload")
-    public Response upload(String name, @MultipartForm DeploymentData data) {
+    @Path("/{appName}/upload")
+    public Response upload(String appName, @MultipartForm DeploymentData data) {
         try {
+            Application application = applicationRepo.findByName(appName);
+            if (application == null) {
+                return Response.status(Response.Status.NOT_FOUND).build();
+            }
             java.nio.file.Path path = data.file.uploadedFile();
             System.out.println("----> " + path);
             System.out.println("----> " + data.file.fileName());
@@ -69,14 +74,16 @@ public class ApplicationResource {
                 return Response.status(Response.Status.UNSUPPORTED_MEDIA_TYPE).build();
             }
 
-            java.nio.file.Path dest = uiPaths.getApplicationDir(name).resolve(data.file.fileName());
+            String fileName = data.file.fileName();
+            java.nio.file.Path dest = uiPaths.getApplicationDir(appName).resolve(fileName);
             if (Files.exists(dest)) {
                 // TODO: This will do for now to avoid the FileAlreadyExistsException. Will probably need some delete/update commands
                 Files.delete(dest);
             }
             Files.move(data.file.uploadedFile(), dest);
 
-            // TODO record the deployment in the db
+            ConfigFileInspection configFileInspection = ConfigFileInspection.inspect(dest);
+            applicationRepo.saveApplicationArchive(application, fileName, configFileInspection);
 
             return Response.status(Response.Status.ACCEPTED).build();
         } catch (IOException e) {
@@ -85,25 +92,20 @@ public class ApplicationResource {
     }
 
     @POST
-    @Path("/{name}/deploy")
-    public Response deploy(String name) {
+    @Path("/{appName}/deploy")
+    public Response deploy(String appName) {
         try {
-            Application application = applicationRepo.findByName(name);
+            Application application = applicationRepo.findByName(appName);
             if (application == null) {
                 return Response.status(Response.Status.NOT_FOUND).build();
             }
-            java.nio.file.Path appDir = uiPaths.getApplicationDir(name);
+            java.nio.file.Path appDir = uiPaths.getApplicationDir(appName);
             java.nio.file.Path scriptDir = uiPaths.getScriptsDir();
             java.nio.file.Path createApplicationScript =
                     uiPaths.getScriptsDir().resolve(CREATE_APPLICATION_SCRIPT);
 
 
-//            #!/bin/sh
-//
-//            appName="${1}"
-//            helmChart="${2}"
-//            appFolder="${3}"
-            ProcessBuilder pb = new ProcessBuilder("./" + CREATE_APPLICATION_SCRIPT, name, "", appDir.toString());
+            ProcessBuilder pb = new ProcessBuilder("./" + CREATE_APPLICATION_SCRIPT, appName, "", appDir.toString());
             pb.directory(scriptDir.toFile());
             pb.start();
 

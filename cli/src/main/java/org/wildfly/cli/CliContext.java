@@ -1,5 +1,9 @@
 package org.wildfly.cli;
 
+import org.eclipse.microprofile.rest.client.inject.RestClient;
+import org.wildfly.cli.rest.client.ApplicationService;
+import org.wildfly.managed.common.model.Application;
+
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.Dependent;
 import java.io.IOException;
@@ -12,6 +16,9 @@ import java.util.Map;
 
 @Dependent
 public class CliContext {
+
+    @RestClient
+    ApplicationService applicationService;
 
     private Path contextDir;
     private Map<ContextKey, String> values = new HashMap<>();
@@ -34,6 +41,21 @@ public class CliContext {
                     String value = new String(contents, StandardCharsets.UTF_8);
                     values.put(key, value);
                 }
+            }
+        }
+
+        String activeApp = getActiveApp();
+        if (activeApp != null) {
+            boolean foundActiveApp = false;
+            for (Application application : applicationService.list()) {
+                if (application.name.equals(activeApp)) {
+                    foundActiveApp = true;
+                    break;
+                }
+            }
+            if (!foundActiveApp) {
+                System.out.println("Clearing active application. It was set to '" + activeApp + "', which no longer exists.");
+                setActiveApp(null);
             }
         }
     }
