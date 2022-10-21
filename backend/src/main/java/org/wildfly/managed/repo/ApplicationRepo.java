@@ -8,7 +8,9 @@ import org.wildfly.managed.common.model.Application;
 import javax.enterprise.context.ApplicationScoped;
 import javax.persistence.EntityManager;
 import javax.transaction.Transactional;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 
 @ApplicationScoped
@@ -37,9 +39,19 @@ public class ApplicationRepo implements PanacheRepository<Application> {
     }
 
     @Transactional
-    public List<Application> all() {
-        return listAll();
+    public List<AppArchive> listArchivesForApp(String name) {
+        Application application = find("name", name).firstResult();
+        Collection<AppArchive> archives = application.appArchives;
+        List<AppArchive> appArchives = new ArrayList<>(archives);
+        appArchives.sort(new Comparator<AppArchive>() {
+            @Override
+            public int compare(AppArchive o1, AppArchive o2) {
+                return o1.fileName.compareTo(o2.fileName);
+            }
+        });
+        return appArchives;
     }
+
 
     @Transactional
     public void saveApplicationArchive(Application application, String fileName, ConfigFileInspection configFileInspection) {

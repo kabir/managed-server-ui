@@ -1,5 +1,6 @@
 package org.wildfly.managed.common.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 
 import javax.persistence.Entity;
@@ -9,6 +10,7 @@ import java.util.Objects;
 @Entity
 public class AppArchive extends PanacheEntity {
 
+    @JsonIgnore
     @ManyToOne
     public Application application;
 

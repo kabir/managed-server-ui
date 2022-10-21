@@ -5,6 +5,7 @@ import org.wildfly.cli.CliContext;
 import org.wildfly.cli.rest.client.ApplicationService;
 import org.wildfly.cli.rest.client.DeploymentDto;
 import org.wildfly.cli.util.TableOutputter;
+import org.wildfly.managed.common.model.AppArchive;
 import org.wildfly.managed.common.model.Application;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -149,14 +150,46 @@ public class AppCommands {
             description = "Application archive commands",
             mixinStandardHelpOptions = true,
             subcommands = {
-                    ArchiveCommands.UploadCommand.class
+                    ArchiveCommands.ListCommand.class,
+                    ArchiveCommands.AddCommand.class,
+                    ArchiveCommands.ReplaceCommand.class,
+                    ArchiveCommands.DeleteCommand.class
             })
     static final class ArchiveCommands {
-        @Command(name = "add", description = "Add one or more archives to the application.", mixinStandardHelpOptions = true)
-        static class UploadCommand extends BaseAppCommand {
-            @RestClient
-            ApplicationService applicationService;
 
+        @Command(name = "list", description = "List archives in the application.", mixinStandardHelpOptions = true)
+        static class ListCommand extends BaseAppCommand {
+            @Override
+            public void run() {
+                String activeApp = validateActiveApp();
+                List<AppArchive> appArchives = applicationService.listArchives(activeApp);
+                System.out.println("Archives in " + activeApp + ":");
+                if (appArchives.size() == 0) {
+                    System.out.println(INDENT + "No archives");
+                } else {
+                    TableOutputter outputter = TableOutputter.builder()
+                            .addColumn(30, "Archive")
+                            .addColumn(7, "Has XML")
+                            .addColumn(7, "Has CLI")
+                            .addColumn(8, "Has YAML")
+                            .build();
+                    for (AppArchive appArchive : appArchives) {
+                        outputter.addRow()
+                                .addColumns(
+                                        appArchive.fileName,
+                                        appArchive.serverConfigXml ? "*" : "",
+                                        appArchive.serverInitCli ? "*" : "",
+                                        appArchive.serverInitYml ? "*" : ""
+                                )
+                                .output();
+
+                    }
+                }
+            }
+        }
+
+        @Command(name = "add", description = "Add one or more archives to the application.", mixinStandardHelpOptions = true)
+        static class AddCommand extends BaseAppCommand {
             @CommandLine.Parameters(paramLabel = "<paths>", description = "Comma-separated paths to files to add.", split = ",")
             List<java.nio.file.Path> paths;
 

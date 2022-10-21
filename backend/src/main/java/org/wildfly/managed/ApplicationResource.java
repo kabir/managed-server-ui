@@ -19,6 +19,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -86,7 +87,7 @@ public class ApplicationResource {
     @GET
     @Path("/{appName}/archive")
     public List<AppArchive> listArchives(String appName) {
-        return Collections.emptyList();
+        return applicationRepo.listArchivesForApp(appName);
     }
 
     @POST
@@ -96,7 +97,7 @@ public class ApplicationResource {
     public Response uploadArchive(String appName, @MultipartForm DeploymentData data) {
         UploadedFileContext checker = new UploadedFileContext(appName, data);
         Response response = checker.init();
-        if (response == null) {
+        if (response != null) {
             return response;
         }
 

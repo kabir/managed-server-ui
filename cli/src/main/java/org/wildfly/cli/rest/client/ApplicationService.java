@@ -36,7 +36,7 @@ public interface ApplicationService {
 
     @GET
     @Path("/{appName}/archive")
-    List<AppArchive> listArchives(String appName);
+    List<AppArchive>  listArchives(String appName);
 
     @POST
     @Consumes(MediaType.MULTIPART_FORM_DATA)
