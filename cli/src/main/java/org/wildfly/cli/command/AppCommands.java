@@ -18,15 +18,15 @@ import java.util.List;
         description = "Application commands",
         mixinStandardHelpOptions = true,
         subcommands = {
-                AppCommand.UseCommand.class,
-                AppCommand.GetCommand.class,
-                AppCommand.CreateCommand.class,
-                AppCommand.DeleteCommand.class,
-                AppCommand.ListCommand.class,
-                AppCommand.UploadCommand.class,
-                AppCommand.DeployCommand.class
+                AppCommands.UseCommand.class,
+                AppCommands.GetCommand.class,
+                AppCommands.CreateCommand.class,
+                AppCommands.DeleteCommand.class,
+                AppCommands.ListCommand.class,
+                AppCommands.DeployCommand.class,
+                AppCommands.ArchiveCommands.class
         })
-public class AppCommand {
+public class AppCommands {
 
     static abstract class BaseAppCommand implements Runnable {
         @RestClient
@@ -131,33 +131,6 @@ public class AppCommand {
         }
     }
 
-
-    @Command(name = "upload", description = "Upload", mixinStandardHelpOptions = true)
-    static class UploadCommand extends BaseAppCommand {
-        @RestClient
-        ApplicationService applicationService;
-
-        @CommandLine.Parameters(paramLabel = "<path>", description = "Path to the file.")
-        java.nio.file.Path path;
-
-        @Override
-        public void run() {
-            String activeApp = validateActiveApp();
-
-            if (!Files.exists(path)) {
-                System.err.println(path + " not found");
-                System.exit(1);
-            }
-            if (Files.isDirectory(path)) {
-                System.err.println(path + " is a directory");
-                System.exit(1);
-            }
-            //String fileName = path.getFileName().toString();
-            DeploymentDto dto = new DeploymentDto(path/*, fileName*/);
-            applicationService.upload(activeApp, dto);
-        }
-    }
-
     @Command(name = "deploy", description = "Deploy the application", mixinStandardHelpOptions = true)
     static class DeployCommand extends BaseAppCommand {
         @RestClient
@@ -171,4 +144,90 @@ public class AppCommand {
         }
     }
 
+    @Command(
+            name = "archive",
+            description = "Application archive commands",
+            mixinStandardHelpOptions = true,
+            subcommands = {
+                    ArchiveCommands.UploadCommand.class
+            })
+    static final class ArchiveCommands {
+        @Command(name = "add", description = "Add one or more archives to the application.", mixinStandardHelpOptions = true)
+        static class UploadCommand extends BaseAppCommand {
+            @RestClient
+            ApplicationService applicationService;
+
+            @CommandLine.Parameters(paramLabel = "<paths>", description = "Comma-separated paths to files to add.", split = ",")
+            List<java.nio.file.Path> paths;
+
+            @Override
+            public void run() {
+                String activeApp = validateActiveApp();
+
+                for (java.nio.file.Path path : paths) {
+                    if (!Files.exists(path)) {
+                        System.err.println(path + " not found");
+                        System.exit(1);
+                    }
+                    if (Files.isDirectory(path)) {
+                        System.err.println(path + " is a directory");
+                        System.exit(1);
+                    }
+                    DeploymentDto dto = new DeploymentDto(path);
+                    String fileName = path.getFileName().toString();
+                    System.out.println("Adding " + fileName + " to application " + activeApp + "");
+
+                    System.out.println("Uploading " + activeApp);
+                    applicationService.uploadArchive(activeApp, dto);
+                }
+            }
+        }
+
+        @Command(name = "replace", description = "Replaces one or more archives in the application.", mixinStandardHelpOptions = true)
+        static class ReplaceCommand extends BaseAppCommand {
+            @RestClient
+            ApplicationService applicationService;
+
+            @CommandLine.Parameters(paramLabel = "<paths>", description = "Comma-separated paths to files to replace.", split = ",")
+            List<java.nio.file.Path> paths;
+
+            @Override
+            public void run() {
+                String activeApp = validateActiveApp();
+
+                for (java.nio.file.Path path : paths) {
+                    if (!Files.exists(path)) {
+                        System.err.println(path + " not found");
+                        System.exit(1);
+                    }
+                    if (Files.isDirectory(path)) {
+                        System.err.println(path + " is a directory");
+                        System.exit(1);
+                    }
+                    DeploymentDto dto = new DeploymentDto(path);
+                    String fileName = path.getFileName().toString();
+                    System.out.println("Uploading " + fileName + " to application " + activeApp + " for replacement");
+                    applicationService.replaceArchive(activeApp, fileName, dto);
+                }
+            }
+        }
+
+        @Command(name = "delete", description = "Deletes one or more archives in the application.", mixinStandardHelpOptions = true)
+        static class DeleteCommand extends BaseAppCommand {
+            @RestClient
+            ApplicationService applicationService;
+
+            @CommandLine.Parameters(paramLabel = "<names>", description = "Comma-separated names of archives to delete.", split = ",")
+            List<String> names;
+
+            @Override
+            public void run() {
+                String activeApp = validateActiveApp();
+                for (String name : names) {
+                    System.out.println("Deleting " + name + " from " + activeApp);
+                    applicationService.deleteArchive(activeApp, name);
+                }
+            }
+        }
+    }
 }

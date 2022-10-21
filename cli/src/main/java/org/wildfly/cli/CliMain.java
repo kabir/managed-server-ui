@@ -1,9 +1,7 @@
 package org.wildfly.cli;
 
 import io.quarkus.picocli.runtime.annotations.TopCommand;
-import io.quarkus.runtime.QuarkusApplication;
-import io.quarkus.runtime.annotations.QuarkusMain;
-import org.wildfly.cli.command.AppCommand;
+import org.wildfly.cli.command.AppCommands;
 import picocli.CommandLine;
 
 //@QuarkusMain
@@ -12,7 +10,7 @@ import picocli.CommandLine;
         name = "ms-cli",
         mixinStandardHelpOptions = true,
         version = "0.1",
-        subcommands = {AppCommand.class})
+        subcommands = {AppCommands.class})
 public class CliMain /*implements QuarkusApplication*/ {
 
 //    public int run(String[] args) {
