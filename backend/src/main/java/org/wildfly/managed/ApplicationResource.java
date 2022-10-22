@@ -20,7 +20,6 @@ import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
 @Path("/app")
@@ -94,14 +93,15 @@ public class ApplicationResource {
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Produces(MediaType.TEXT_PLAIN)
     @Path("/{appName}/archive")
-    public Response uploadArchive(String appName, @MultipartForm DeploymentData data) {
+    public Response addArchive(String appName, @MultipartForm DeploymentData data) {
+        System.out.println("--- Add");
         UploadedFileContext checker = new UploadedFileContext(appName, data);
         Response response = checker.init();
         if (response != null) {
             return response;
         }
 
-        applicationRepo.saveApplicationArchive(checker.application, checker.archiveName, checker.configFileInspection);
+        applicationRepo.createApplicationArchive(checker.application, checker.archiveName, checker.configFileInspection);
 
         return Response.status(Response.Status.ACCEPTED).build();
 
@@ -112,13 +112,14 @@ public class ApplicationResource {
     @Produces(MediaType.TEXT_PLAIN)
     @Path("/{appName}/archive/{archiveName}")
     public Response replaceArchive(String appName, String archiveName, @MultipartForm DeploymentData data) {
+        System.out.println("--- Replace");
         UploadedFileContext checker = new UploadedFileContext(appName, archiveName, data);
         Response response = checker.init();
-        if (response == null) {
+        if (response != null) {
             return response;
         }
 
-        applicationRepo.saveApplicationArchive(checker.application, checker.archiveName, checker.configFileInspection);
+        applicationRepo.updateApplicationArchive(checker.application, checker.archiveName, checker.configFileInspection);
 
         return Response.status(Response.Status.ACCEPTED).build();
     }
@@ -131,7 +132,8 @@ public class ApplicationResource {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
 
-        return Response.status(Response.Status.ACCEPTED).build();
+        applicationRepo.deleteApplicationArchive(application, archiveName);
+        return Response.status(Response.Status.NO_CONTENT).build();
     }
 
     private class UploadedFileContext {

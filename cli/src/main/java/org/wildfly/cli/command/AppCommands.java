@@ -211,7 +211,7 @@ public class AppCommands {
                     System.out.println("Adding " + fileName + " to application " + activeApp + "");
 
                     System.out.println("Uploading " + activeApp);
-                    applicationService.uploadArchive(activeApp, dto);
+                    applicationService.addArchive(activeApp, dto);
                 }
             }
         }

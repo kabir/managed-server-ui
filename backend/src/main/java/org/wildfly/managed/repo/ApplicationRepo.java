@@ -54,10 +54,12 @@ public class ApplicationRepo implements PanacheRepository<Application> {
 
 
     @Transactional
-    public void saveApplicationArchive(Application application, String fileName, ConfigFileInspection configFileInspection) {
+    public void createApplicationArchive(Application application, String fileName, ConfigFileInspection configFileInspection) {
         // TODO Didn't there use to be something like attach?
         application = findByName(application.name);
-        EntityManager em = getEntityManager();
+        if (application == null) {
+            throw new IllegalStateException("Could not find application " + application.name);
+        }
 
         AppArchive appArchive = new AppArchive();
         appArchive.application = application;
@@ -66,19 +68,75 @@ public class ApplicationRepo implements PanacheRepository<Application> {
         appArchive.serverInitCli = configFileInspection.isServerInitCli();
         appArchive.serverInitYml = configFileInspection.isServerInitYml();
 
-
         Collection<AppArchive> appArchives = application.appArchives;
-//        if (appArchives.contains(appArchive)) {
-//            System.out.println("-- Already there");
-//        }
+        if (appArchives.contains(appArchive)) {
+            throw new IllegalStateException("Archive " + appArchive.fileName + " already exists");
+        }
         appArchives.add(appArchive);
         application.appArchives = appArchives;
 
         appArchive.persist();
-
-//        //persist(appArchive);
-//        appArchive.persist();
     }
 
+    @Transactional
+    public void updateApplicationArchive(Application application, String fileName, ConfigFileInspection configFileInspection) {
+        System.out.println("Updating " + fileName);
+        // TODO Didn't there use to be something like attach?
+        application = findByName(application.name);
+        if (application == null) {
+            throw new IllegalStateException("Could not find application " + application.name);
+        }
 
+        AppArchive found = null;
+        Collection<AppArchive> appArchives = application.appArchives;
+        for (AppArchive existing : appArchives) {
+            System.out.println("--- " + existing.fileName);
+            if (existing.fileName.equals(fileName)) {
+                found = existing;
+                System.out.println("--- matches ");
+                break;
+            }
+        }
+        System.out.println("--- Checking if found");
+        if (found == null) {
+            System.out.println("--- Not found");
+            // TODO if not working we should undo the file copy in the caller
+            throw new IllegalStateException("No existing application called " + fileName);
+        } else {
+            found.serverConfigXml = configFileInspection.isServerConfigXml();
+            found.serverInitCli = configFileInspection.isServerInitCli();
+            found.serverInitYml = configFileInspection.isServerInitYml();
+        }
+        System.out.println("--- done");
+    }
+
+    @Transactional
+    public void deleteApplicationArchive(Application application, String fileName) {
+        application = findByName(application.name);
+        if (application == null) {
+            throw new IllegalStateException("Could not find application " + application.name);
+        }
+
+        AppArchive found = null;
+        Collection<AppArchive> appArchives = application.appArchives;
+        for (AppArchive existing : appArchives) {
+            System.out.println("--- " + existing.fileName);
+            if (existing.fileName.equals(fileName)) {
+                found = existing;
+                System.out.println("--- matches ");
+                break;
+            }
+        }
+        System.out.println("--- Checking if found");
+        if (found == null) {
+            System.out.println("--- Not found");
+            // TODO if not working we should undo the file copy in the caller
+            throw new IllegalStateException("No existing application called " + fileName);
+        } else {
+            appArchives.remove(found);
+            found.delete();
+            found.application = null;
+        }
+
+    }
 }

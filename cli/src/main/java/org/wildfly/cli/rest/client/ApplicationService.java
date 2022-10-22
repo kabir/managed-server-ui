@@ -13,7 +13,6 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 import java.util.List;
 
 @Path("/app")
@@ -42,7 +41,7 @@ public interface ApplicationService {
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Produces(MediaType.TEXT_PLAIN)
     @Path("/{appName}/archive")
-    void uploadArchive(String appName, @MultipartForm DeploymentDto deploymentDto);
+    void addArchive(String appName, @MultipartForm DeploymentDto deploymentDto);
 
     @PUT
     @Consumes(MediaType.MULTIPART_FORM_DATA)
