@@ -25,7 +25,8 @@ import java.util.List;
                 AppCommands.DeleteCommand.class,
                 AppCommands.ListCommand.class,
                 AppCommands.DeployCommand.class,
-                AppCommands.ArchiveCommands.class
+                AppCommands.ArchiveCommands.class,
+                AppCommands.ConfigCommands.class
         })
 public class AppCommands {
 
@@ -47,6 +48,7 @@ public class AppCommands {
     }
 
     private static final String INDENT = "  ";
+
     @Command(name = "create", description = "Creates a new application", mixinStandardHelpOptions = true)
     static class CreateCommand extends BaseAppCommand {
 
@@ -267,8 +269,6 @@ public class AppCommands {
 
         @Command(name = "delete", description = "Deletes one or more archives in the application.", mixinStandardHelpOptions = true)
         static class DeleteCommand extends BaseAppCommand {
-            @RestClient
-            ApplicationService applicationService;
 
             @CommandLine.Parameters(paramLabel = "<names>", description = "Comma-separated names of archives to delete.", split = ",")
             List<String> names;
@@ -282,5 +282,73 @@ public class AppCommands {
                 }
             }
         }
+    }
+
+    @Command(
+            name = "config",
+            description = "Application config commands",
+            mixinStandardHelpOptions = true,
+            subcommands = {
+                    ConfigCommands.GetCommand.class,
+                    ConfigCommands.SetCommand.class,
+                    ConfigCommands.DeleteCommand.class
+            })
+    static final class ConfigCommands {
+
+        static abstract class BaseConfigCommand extends BaseAppCommand {
+            @CommandLine.Parameters(paramLabel = "<type>", description = "xml, cli, yml or all. " +
+                    "The xml is used to configure the Galleon layers, while the cli and yml is used to configure the server")
+            String type;
+
+            void validateType() {
+                switch (type) {
+                    case "xml":
+                    case "cli":
+                    case "yml":
+                    return;
+                    default:
+                        System.err.println("Not a valid type");
+                        System.exit(1);
+                }
+            }
+        }
+
+        @Command(name = "get", description = "Gets the config file contents.", mixinStandardHelpOptions = true)
+        static class GetCommand extends BaseConfigCommand {
+
+            @Override
+            public void run() {
+                String activeApp = validateActiveApp();
+                validateType();
+                String config = applicationService.getConfigFileContents(activeApp, type);
+                System.out.println(config);
+            }
+        }
+
+        @Command(name = "set", description = "Adds config file contents.", mixinStandardHelpOptions = true)
+        static class SetCommand extends BaseConfigCommand {
+            @CommandLine.Parameters(paramLabel = "<path>", description = "Path to file containing the contents.")
+            java.nio.file.Path path;
+
+            @Override
+            public void run() {
+                String activeApp = validateActiveApp();
+                validateType();
+                applicationService.setConfigFileContents(activeApp, type, new DeploymentDto(path));
+            }
+        }
+
+        @Command(name = "delete", description = "Deletes the config file.", mixinStandardHelpOptions = true)
+        static class DeleteCommand extends BaseConfigCommand {
+
+
+            @Override
+            public void run() {
+                String activeApp = validateActiveApp();
+                validateType();
+                applicationService.deleteConfigFileContents(activeApp, type);
+            }
+        }
+
     }
 }

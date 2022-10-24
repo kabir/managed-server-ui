@@ -12,6 +12,7 @@ import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import java.util.List;
 
@@ -53,4 +54,17 @@ public interface ApplicationService {
     @Path("/{appName}/archive/{archiveName}")
     void deleteArchive(String appName, String archiveName);
 
+    @GET
+    @Path("/{appName}/config-file")
+    String getConfigFileContents(String appName, @QueryParam("type") String type);
+
+    @PUT
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Produces(MediaType.TEXT_PLAIN)
+    @Path("/{appName}/config-file")
+    void setConfigFileContents(String appName, @QueryParam("type") String type, @MultipartForm DeploymentDto dto);
+
+    @DELETE
+    @Path("/{appName}/config-file")
+    void deleteConfigFileContents(String appName, @QueryParam("type") String type);
 }

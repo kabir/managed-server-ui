@@ -20,10 +20,22 @@ public class Application extends PanacheEntity {
     @OneToMany(mappedBy = "application")
     public Collection<AppArchive> appArchives = new HashSet<>();
 
-    @javax.persistence.Lob
-    @Basic(fetch=LAZY)
+//    @javax.persistence.Lob
+//    @Basic(fetch=LAZY)
     public String serverConfigXml;
 
     public boolean hasServerConfigXml;
+
+//    @javax.persistence.Lob
+//    @Basic(fetch=LAZY)
+    public String serverInitCli;
+
+    public boolean hasServerInitCli;
+
+//    @javax.persistence.Lob
+//    @Basic(fetch=LAZY)
+    public String serverInitYml;
+
+    public boolean hasServerInitYml;
 }
 

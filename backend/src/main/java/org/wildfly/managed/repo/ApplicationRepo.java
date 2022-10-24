@@ -161,6 +161,38 @@ public class ApplicationRepo implements PanacheRepository<Application> {
         }
     }
 
+    @Transactional
+    public String getConfigFileContents(String appName, String type) {
+        Application application = findByName(appName);
+        if (application == null) {
+            throw new IllegalStateException("Could not find application " + appName);
+        }
+
+        ApplicationConfigAccessor accessor = ApplicationConfigAccessor.getAccessor(application, type);
+        return accessor.getConfig();
+    }
+
+    @Transactional
+    public void setConfigFileContents(String appName, String type, String contents) {
+        Application application = findByName(appName);
+        if (application == null) {
+            throw new IllegalStateException("Could not find application " + appName);
+        }
+
+        ApplicationConfigAccessor accessor = ApplicationConfigAccessor.getAccessor(application, type);
+        accessor.setConfig(contents);
+    }
+
+    public void deleteConfigFileContents(String appName, String type) {
+        Application application = findByName(appName);
+        if (application == null) {
+            throw new IllegalStateException("Could not find application " + appName);
+        }
+
+        ApplicationConfigAccessor accessor = ApplicationConfigAccessor.getAccessor(application, type);
+        accessor.setConfig(null);
+    }
+
     // TODO Get this working and use this rather than all the iterating I am doing
 //    private AppArchive findByApplicationAndName(Application application, String name) {
 //        AppArchive appArchive = AppArchive.find("application AND name", application, name).firstResult();

@@ -15,11 +15,11 @@ import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.Collection;
 import java.util.List;
 
 @Path("/app")
@@ -184,4 +184,39 @@ public class ApplicationResource {
             return null;
         }
     }
+
+    @GET
+    @Path("/{appName}/config-file")
+    public String getConfigFileContents(String appName, @QueryParam("type") String type) {
+        System.out.println("---> get config");
+        return applicationRepo.getConfigFileContents(appName, type);
+    }
+
+    @PUT
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Produces(MediaType.TEXT_PLAIN)
+    @Path("/{appName}/config-file")
+    public Response setConfigFileContents(String appName, @QueryParam("type") String type, @MultipartForm DeploymentData dto) {
+        System.out.println("---> replace config");
+        String contents = null;
+        try {
+            contents = Files.readString(dto.file.uploadedFile());
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
+        System.out.println("---> " + contents);
+        applicationRepo.setConfigFileContents(appName, type, contents);
+        return Response.status(Response.Status.NO_CONTENT).build();
+    }
+
+    @DELETE
+    @Path("/{appName}/config-file")
+    public Response deleteConfigFileContents(String appName, @QueryParam("type") String type) {
+        System.out.println("---> delete config");
+        applicationRepo.deleteConfigFileContents(appName, type);
+        return Response.status(Response.Status.NO_CONTENT).build();
+    }
+
+
+
 }
