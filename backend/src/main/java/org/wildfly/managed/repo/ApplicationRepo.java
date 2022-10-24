@@ -6,7 +6,6 @@ import org.wildfly.managed.common.model.AppArchive;
 import org.wildfly.managed.common.model.Application;
 
 import javax.enterprise.context.ApplicationScoped;
-import javax.persistence.EntityManager;
 import javax.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -32,6 +31,8 @@ public class ApplicationRepo implements PanacheRepository<Application> {
 
         return application;
     }
+
+
 
     @Transactional
     public void delete(String name) {
@@ -72,6 +73,7 @@ public class ApplicationRepo implements PanacheRepository<Application> {
         if (appArchives.contains(appArchive)) {
             throw new IllegalStateException("Archive " + appArchive.fileName + " already exists");
         }
+        checkNoDuplicateConfigFiles(application, appArchive);
         appArchives.add(appArchive);
         application.appArchives = appArchives;
 
@@ -107,7 +109,27 @@ public class ApplicationRepo implements PanacheRepository<Application> {
             found.serverInitCli = configFileInspection.isServerInitCli();
             found.serverInitYml = configFileInspection.isServerInitYml();
         }
+        checkNoDuplicateConfigFiles(application, found);
         System.out.println("--- done");
+    }
+
+    private void checkNoDuplicateConfigFiles(Application application, AppArchive archive) {
+        if (!archive.serverConfigXml && !archive.serverInitCli && !archive.serverInitYml) {
+            return;
+        }
+        for (AppArchive curr : application.appArchives) {
+            if (!curr.equals(archive)) {
+                if (archive.serverConfigXml && curr.serverConfigXml) {
+                    throw new IllegalStateException("Only one application can contain a server-config.xml");
+                }
+                if (archive.serverInitCli && curr.serverInitCli) {
+                    throw new IllegalStateException("Only one application can contain a server-init.cli");
+                }
+                if (archive.serverInitYml && curr.serverInitYml) {
+                    throw new IllegalStateException("Only one application can contain a server-init.yml");
+                }
+            }
+        }
     }
 
     @Transactional
@@ -137,6 +159,12 @@ public class ApplicationRepo implements PanacheRepository<Application> {
             found.delete();
             found.application = null;
         }
-
     }
+
+    // TODO Get this working and use this rather than all the iterating I am doing
+//    private AppArchive findByApplicationAndName(Application application, String name) {
+//        AppArchive appArchive = AppArchive.find("application AND name", application, name).firstResult();
+//        System.out.println(appArchive);
+//        return appArchive;
+//    }
 }
