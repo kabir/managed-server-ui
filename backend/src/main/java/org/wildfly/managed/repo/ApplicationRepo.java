@@ -1,6 +1,7 @@
 package org.wildfly.managed.repo;
 
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
+import io.quarkus.panache.common.Parameters;
 import org.wildfly.managed.ConfigFileInspection;
 import org.wildfly.managed.common.model.AppArchive;
 import org.wildfly.managed.common.model.Application;
@@ -83,25 +84,13 @@ public class ApplicationRepo implements PanacheRepository<Application> {
     @Transactional
     public void updateApplicationArchive(Application application, String fileName, ConfigFileInspection configFileInspection) {
         System.out.println("Updating " + fileName);
-        // TODO Didn't there use to be something like attach?
         application = findByName(application.name);
         if (application == null) {
             throw new IllegalStateException("Could not find application " + application.name);
         }
 
-        AppArchive found = null;
-        Collection<AppArchive> appArchives = application.appArchives;
-        for (AppArchive existing : appArchives) {
-            System.out.println("--- " + existing.fileName);
-            if (existing.fileName.equals(fileName)) {
-                found = existing;
-                System.out.println("--- matches ");
-                break;
-            }
-        }
-        System.out.println("--- Checking if found");
+        AppArchive found = findByApplicationAndName(application, fileName);
         if (found == null) {
-            System.out.println("--- Not found");
             // TODO if not working we should undo the file copy in the caller
             throw new IllegalStateException("No existing application called " + fileName);
         } else {
@@ -139,25 +128,13 @@ public class ApplicationRepo implements PanacheRepository<Application> {
             throw new IllegalStateException("Could not find application " + application.name);
         }
 
-        AppArchive found = null;
-        Collection<AppArchive> appArchives = application.appArchives;
-        for (AppArchive existing : appArchives) {
-            System.out.println("--- " + existing.fileName);
-            if (existing.fileName.equals(fileName)) {
-                found = existing;
-                System.out.println("--- matches ");
-                break;
-            }
-        }
-        System.out.println("--- Checking if found");
-        if (found == null) {
-            System.out.println("--- Not found");
-            // TODO if not working we should undo the file copy in the caller
-            throw new IllegalStateException("No existing application called " + fileName);
+        AppArchive appArchive = findByApplicationAndName(application, fileName);
+        if (appArchive != null) {
+            application.appArchives.remove(appArchive);
+            appArchive.delete();
+            appArchive.application = null;
         } else {
-            appArchives.remove(found);
-            found.delete();
-            found.application = null;
+            throw new IllegalStateException("No existing archive called " + fileName);
         }
     }
 
@@ -194,9 +171,12 @@ public class ApplicationRepo implements PanacheRepository<Application> {
     }
 
     // TODO Get this working and use this rather than all the iterating I am doing
-//    private AppArchive findByApplicationAndName(Application application, String name) {
-//        AppArchive appArchive = AppArchive.find("application AND name", application, name).firstResult();
-//        System.out.println(appArchive);
-//        return appArchive;
-//    }
+    private AppArchive findByApplicationAndName(Application application, String name) {
+        AppArchive appArchive = AppArchive.find("application=:application AND fileName=:name",
+                Parameters
+                        .with("application", application)
+                        .and("name", name)).firstResult();
+        System.out.println(appArchive);
+        return appArchive;
+    }
 }
