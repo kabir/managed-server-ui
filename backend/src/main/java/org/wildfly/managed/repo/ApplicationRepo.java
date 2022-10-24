@@ -145,8 +145,19 @@ public class ApplicationRepo implements PanacheRepository<Application> {
             throw new IllegalStateException("Could not find application " + appName);
         }
 
-        ApplicationConfigAccessor accessor = ApplicationConfigAccessor.getAccessor(application, type);
-        return accessor.getConfig();
+        String config = null;
+        if (type.equals("xml")) {
+            System.out.println("read xml!");
+            config = application.serverConfigXml;
+        } else if (type.equals("cli")) {
+            System.out.println("read cli!");
+            config = application.serverInitCli;
+        } else if (type.equals("yml")) {
+            System.out.println("read yml!");
+            config = application.serverInitYml;
+        }
+        System.out.println("---> config");
+        return config;
     }
 
     @Transactional
@@ -156,18 +167,46 @@ public class ApplicationRepo implements PanacheRepository<Application> {
             throw new IllegalStateException("Could not find application " + appName);
         }
 
-        ApplicationConfigAccessor accessor = ApplicationConfigAccessor.getAccessor(application, type);
-        accessor.setConfig(contents);
+        System.out.println("Setting Contents: " + contents);
+        if (type.equals("xml")) {
+            System.out.println("xml!");
+            application.serverConfigXml = contents;
+            application.hasServerConfigXml = contents != null;
+        } else if (type.equals("cli")) {
+            System.out.println("cli!");
+            application.serverInitCli = contents;
+            application.hasServerInitCli = contents != null;
+        } else if (type.equals("yml")) {
+            System.out.println("yml!");
+            application.serverInitYml = contents;
+            application.hasServerInitYml = contents != null;
+        }
+        // These don't make a difference
+        //getEntityManager().merge(application);
+        //getEntityManager().flush();
     }
 
+    @Transactional
     public void deleteConfigFileContents(String appName, String type) {
         Application application = findByName(appName);
         if (application == null) {
             throw new IllegalStateException("Could not find application " + appName);
         }
 
-        ApplicationConfigAccessor accessor = ApplicationConfigAccessor.getAccessor(application, type);
-        accessor.setConfig(null);
+        System.out.println("Deleting Config: ");
+        if (type.equals("xml")) {
+            System.out.println("xml!");
+            application.serverConfigXml = null;
+            application.hasServerConfigXml = false;
+        } else if (type.equals("cli")) {
+            System.out.println("cli!");
+            application.serverInitCli = null;
+            application.hasServerInitCli =false;
+        } else if (type.equals("yml")) {
+            System.out.println("yml!");
+            application.serverInitYml = null;
+            application.hasServerInitYml = false;
+        }
     }
 
     // TODO Get this working and use this rather than all the iterating I am doing
@@ -176,7 +215,6 @@ public class ApplicationRepo implements PanacheRepository<Application> {
                 Parameters
                         .with("application", application)
                         .and("name", name)).firstResult();
-        System.out.println(appArchive);
         return appArchive;
     }
 }
