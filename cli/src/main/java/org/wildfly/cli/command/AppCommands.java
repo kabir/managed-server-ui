@@ -95,6 +95,13 @@ public class AppCommands {
 
     @Command(name = "get", description = "Gets the current application", mixinStandardHelpOptions = true)
     static class GetCommand extends BaseAppCommand {
+
+        @Inject
+        ArchiveCommands.ListCommand listCommand;
+
+        @CommandLine.Option(names = {"-v", "--verbose"}, description = "Output detailed information")
+        boolean verbose;
+
         @Override
         public void run() {
             String name = cliContext.getActiveApp();
@@ -102,6 +109,12 @@ public class AppCommands {
                 System.out.println("No application is currently active");
             } else {
                 System.out.println(name);
+                if (verbose) {
+                    System.out.println("");
+                    listCommand.fromCommandLine = false;
+                    listCommand.run();
+                }
+
             }
         }
     }
@@ -159,13 +172,20 @@ public class AppCommands {
 
         @Command(name = "list", description = "List archives in the application.", mixinStandardHelpOptions = true)
         static class ListCommand extends BaseAppCommand {
+            public boolean fromCommandLine = true;
+
             @Override
             public void run() {
                 String activeApp = validateActiveApp();
                 List<AppArchive> appArchives = applicationService.listArchives(activeApp);
-                System.out.println("Archives in " + activeApp + ":");
+                if (fromCommandLine) {
+                    System.out.println("Archives in " + activeApp + ":");
+                } else {
+                    System.out.println("Archives:");
+                }
+
                 if (appArchives.size() == 0) {
-                    System.out.println(INDENT + "No archives");
+                    System.out.println(INDENT + "None");
                 } else {
                     TableOutputter outputter = TableOutputter.builder()
                             .addColumn(30, "Archive")
