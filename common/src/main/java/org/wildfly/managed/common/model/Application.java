@@ -22,28 +22,25 @@ public class Application extends PanacheEntity {
     public Collection<AppArchive> appArchives = new HashSet<>();
 
     @Column
-    @javax.persistence.Lob
     @Basic(fetch=LAZY)
     // org.hibernate.type.TextType is Postgres only, and avoids the large object store
-    @Type( type = "org.hibernate.type.TextType")
+    @Type( type = "text")
     public String serverConfigXml;
 
     public boolean hasServerConfigXml;
 
     @Column
-    @javax.persistence.Lob
     @Basic(fetch=LAZY)
     // org.hibernate.type.TextType is Postgres only, and avoids the large object store
-    @Type( type = "org.hibernate.type.TextType")
+    @Type( type = "text")
     public String serverInitCli;
 
     public boolean hasServerInitCli;
 
     @Column
-    @javax.persistence.Lob
     @Basic(fetch=LAZY)
     // org.hibernate.type.TextType is Postgres only, and avoids the large object store
-    @Type( type = "org.hibernate.type.TextType")
+    @Type( type = "text")
     public String serverInitYml;
 
     public boolean hasServerInitYml;
