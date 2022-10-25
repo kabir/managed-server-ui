@@ -1,9 +1,10 @@
 package org.wildfly.managed;
 
-import io.smallrye.config.ConfigValidationException;
 import org.hibernate.exception.ConstraintViolationException;
 import org.jboss.resteasy.reactive.MultipartForm;
 import org.jboss.resteasy.reactive.ResponseStatus;
+import org.jboss.resteasy.reactive.RestResponse;
+import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 import org.wildfly.managed.common.model.AppArchive;
 import org.wildfly.managed.common.model.Application;
 import org.wildfly.managed.config.UiPaths;
@@ -11,7 +12,6 @@ import org.wildfly.managed.repo.ApplicationRepo;
 
 import javax.inject.Inject;
 import javax.transaction.Transactional;
-import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -52,7 +52,8 @@ public class ApplicationResource {
             Throwable cause = e.getCause();
             while (cause != null) {
                 if (cause instanceof ConstraintViolationException) {
-                    throw new ClientErrorException("There is already an application called: " + application.name, Response.Status.CONFLICT);
+                    System.out.println("Throwing server exception");
+                    throw new ServerException(Response.Status.CONFLICT, "There is already an application called: " + application.name);
                 }
                 cause = cause.getCause();
             }
@@ -231,6 +232,10 @@ public class ApplicationResource {
         return Response.status(Response.Status.NO_CONTENT).build();
     }
 
-
+    @ServerExceptionMapper
+    RestResponse<String> mapException(ServerException e) {
+        System.out.println("----> Converting exception " + e.getStatus() + " " + e.getMessage());
+        return RestResponse.status(e.getStatus(), e.getMessage());
+    }
 
 }
