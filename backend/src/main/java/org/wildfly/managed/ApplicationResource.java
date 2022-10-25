@@ -1,6 +1,9 @@
 package org.wildfly.managed;
 
+import io.smallrye.config.ConfigValidationException;
+import org.hibernate.exception.ConstraintViolationException;
 import org.jboss.resteasy.reactive.MultipartForm;
+import org.jboss.resteasy.reactive.ResponseStatus;
 import org.wildfly.managed.common.model.AppArchive;
 import org.wildfly.managed.common.model.Application;
 import org.wildfly.managed.config.UiPaths;
@@ -8,6 +11,7 @@ import org.wildfly.managed.repo.ApplicationRepo;
 
 import javax.inject.Inject;
 import javax.transaction.Transactional;
+import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -40,10 +44,20 @@ public class ApplicationResource {
     }
 
     @POST
+    @ResponseStatus(201)
     public Application create(Application application) {
-        System.out.println("----> Creating " + application);
-        System.out.println(application.name);
-        return applicationRepo.create(application);
+        try {
+            return applicationRepo.create(application);
+        } catch (RuntimeException e) {
+            Throwable cause = e.getCause();
+            while (cause != null) {
+                if (cause instanceof ConstraintViolationException) {
+                    throw new ClientErrorException("There is already an application called: " + application.name, Response.Status.CONFLICT);
+                }
+                cause = cause.getCause();
+            }
+            throw e;
+        }
     }
 
     @DELETE

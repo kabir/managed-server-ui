@@ -1,5 +1,7 @@
 package org.wildfly.cli.rest.client;
 
+import io.quarkus.rest.client.reactive.ClientExceptionMapper;
+import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.jboss.resteasy.reactive.MultipartForm;
 import org.wildfly.managed.common.model.AppArchive;
@@ -18,6 +20,7 @@ import java.util.List;
 
 @Path("/app")
 @RegisterRestClient(configKey = "managed-server-ui-backend")
+@RegisterProvider(ApplicationServiceExceptionMapper.class)
 public interface ApplicationService {
     @GET
     List<Application> list();
@@ -67,4 +70,6 @@ public interface ApplicationService {
     @DELETE
     @Path("/{appName}/config-file")
     void deleteConfigFileContents(String appName, @QueryParam("type") String type);
+
+
 }
