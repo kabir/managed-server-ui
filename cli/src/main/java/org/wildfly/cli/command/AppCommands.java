@@ -3,7 +3,6 @@ package org.wildfly.cli.command;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.wildfly.cli.CliContext;
 import org.wildfly.cli.rest.client.ApplicationService;
-import org.wildfly.cli.rest.client.CommandFailedException;
 import org.wildfly.cli.rest.client.DeploymentDto;
 import org.wildfly.cli.util.TableOutputter;
 import org.wildfly.managed.common.model.AppArchive;
@@ -58,15 +57,11 @@ public class AppCommands {
 
         @Override
         public void run() {
-            try {
-                Application application = new Application();
-                application.name = name;
-                applicationService.create(application);
-                cliContext.setActiveApp(name);
-                System.out.println("Application " + name + " created and set as the active application.");
-            } catch (CommandFailedException e) {
-                System.err.println(e.getMessage());
-            }
+            Application application = new Application();
+            application.name = name;
+            applicationService.create(application);
+            cliContext.setActiveApp(name);
+            System.out.println("Application " + name + " created and set as the active application.");
         }
     }
 
@@ -91,14 +86,10 @@ public class AppCommands {
         @Override
         public void run() {
             String activeApp = cliContext.getActiveApp();
-            try {
-                applicationService.delete(name);
-                System.out.println("Application '" + name + "' deleted");
-                if (name.equals(activeApp)) {
-                    System.out.println("Since this was the currently active application, the active application has been cleared");
-                }
-            } catch (CommandFailedException e) {
-                System.err.println(e.getMessage());
+            applicationService.delete(name);
+            System.out.println("Application '" + name + "' deleted");
+            if (name.equals(activeApp)) {
+                System.out.println("Since this was the currently active application, the active application has been cleared");
             }
         }
     }

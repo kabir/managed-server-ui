@@ -17,12 +17,19 @@ public class ClientHeaderErrorReader implements ClientResponseFilter {
     public void filter(ClientRequestContext requestContext, ClientResponseContext responseContext) throws IOException {
         if (responseContext.getStatus() >= 300) {
             String reason = responseContext.getHeaderString(WEB_ERROR_DESCRIPTION_HEADER_NAME);
+            String errorMessage = null;
             if (reason != null) {
-                throw new CommandFailedException("ERROR: " + reason, responseContext.getStatus());
+                errorMessage = reason;
             } else if (responseContext.getStatus() == 500){
-                throw new CommandFailedException("ERROR: An internal server error occurred", 500);
+                errorMessage = "An internal server error occurred";
             } else {
-                throw new CommandFailedException("ERROR: An unknown error occurred. HTTP status code:" + responseContext.getStatus(), responseContext.getStatus());
+                errorMessage = "An unknown error occurred. HTTP status code:" + responseContext.getStatus();
+            }
+
+            if (errorMessage != null) {
+                errorMessage = "ERROR: " + errorMessage;
+                System.err.println(errorMessage);
+                System.exit(1);
             }
         }
     }
