@@ -3,11 +3,13 @@ package org.wildfly.managed.repo;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import io.quarkus.panache.common.Parameters;
 import org.wildfly.managed.ConfigFileInspection;
+import org.wildfly.managed.ServerException;
 import org.wildfly.managed.common.model.AppArchive;
 import org.wildfly.managed.common.model.Application;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.transaction.Transactional;
+import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -25,24 +27,24 @@ public class ApplicationRepo implements PanacheRepository<Application> {
     @Transactional
     public Application findByName(String name) {
         Application application = find("name", name).firstResult();
-        System.out.println("===> Loaded " + application.name);
-        for (AppArchive appArchive : application.appArchives) {
-            System.out.println(appArchive.fileName);
+        if (application == null) {
+            throw new ServerException(Response.Status.NOT_FOUND, "No application called: " + name);
         }
-
         return application;
     }
 
 
-
     @Transactional
     public void delete(String name) {
+        // For validation, will throw an error if not found
+        findByName(name);
+
         delete("name", name);
     }
 
     @Transactional
     public List<AppArchive> listArchivesForApp(String name) {
-        Application application = find("name", name).firstResult();
+        Application application = findByName(name);
         Collection<AppArchive> archives = application.appArchives;
         List<AppArchive> appArchives = new ArrayList<>(archives);
         appArchives.sort(new Comparator<AppArchive>() {
@@ -57,12 +59,7 @@ public class ApplicationRepo implements PanacheRepository<Application> {
 
     @Transactional
     public void createApplicationArchive(Application application, String fileName, ConfigFileInspection configFileInspection) {
-        // TODO Didn't there use to be something like attach?
         application = findByName(application.name);
-        if (application == null) {
-            throw new IllegalStateException("Could not find application " + application.name);
-        }
-
         AppArchive appArchive = new AppArchive();
         appArchive.application = application;
         appArchive.fileName = fileName;
@@ -72,7 +69,8 @@ public class ApplicationRepo implements PanacheRepository<Application> {
 
         Collection<AppArchive> appArchives = application.appArchives;
         if (appArchives.contains(appArchive)) {
-            throw new IllegalStateException("Archive " + appArchive.fileName + " already exists");
+            throw new ServerException(Response.Status.CONFLICT,
+                    "There is already an archive called '" + appArchive.fileName + " associated with '" + application.name + "'");
         }
         checkNoDuplicateConfigFiles(application, appArchive);
         appArchives.add(appArchive);
@@ -85,14 +83,11 @@ public class ApplicationRepo implements PanacheRepository<Application> {
     public void updateApplicationArchive(Application application, String fileName, ConfigFileInspection configFileInspection) {
         System.out.println("Updating " + fileName);
         application = findByName(application.name);
-        if (application == null) {
-            throw new IllegalStateException("Could not find application " + application.name);
-        }
 
         AppArchive found = findByApplicationAndName(application, fileName);
         if (found == null) {
             // TODO if not working we should undo the file copy in the caller
-            throw new IllegalStateException("No existing application called " + fileName);
+            throw new ServerException(Response.Status.NOT_FOUND, "No existing application called " + fileName);
         } else {
             found.serverConfigXml = configFileInspection.isServerConfigXml();
             found.serverInitCli = configFileInspection.isServerInitCli();
@@ -109,13 +104,13 @@ public class ApplicationRepo implements PanacheRepository<Application> {
         for (AppArchive curr : application.appArchives) {
             if (!curr.equals(archive)) {
                 if (archive.serverConfigXml && curr.serverConfigXml) {
-                    throw new IllegalStateException("Only one application can contain a server-config.xml");
+                    throw new ServerException(Response.Status.CONFLICT, "Only one application can contain a server-config.xml");
                 }
                 if (archive.serverInitCli && curr.serverInitCli) {
-                    throw new IllegalStateException("Only one application can contain a server-init.cli");
+                    throw new ServerException(Response.Status.CONFLICT, "Only one application can contain a server-init.cli");
                 }
                 if (archive.serverInitYml && curr.serverInitYml) {
-                    throw new IllegalStateException("Only one application can contain a server-init.yml");
+                    throw new ServerException(Response.Status.CONFLICT, "Only one application can contain a server-init.yml");
                 }
             }
         }
@@ -124,26 +119,19 @@ public class ApplicationRepo implements PanacheRepository<Application> {
     @Transactional
     public void deleteApplicationArchive(Application application, String fileName) {
         application = findByName(application.name);
-        if (application == null) {
-            throw new IllegalStateException("Could not find application " + application.name);
-        }
-
         AppArchive appArchive = findByApplicationAndName(application, fileName);
         if (appArchive != null) {
             application.appArchives.remove(appArchive);
             appArchive.delete();
             appArchive.application = null;
         } else {
-            throw new IllegalStateException("No existing archive called " + fileName);
+            throw new ServerException(Response.Status.NOT_FOUND, "No existing archive called " + fileName);
         }
     }
 
     @Transactional
     public String getConfigFileContents(String appName, String type) {
         Application application = findByName(appName);
-        if (application == null) {
-            throw new IllegalStateException("Could not find application " + appName);
-        }
 
         String config = null;
         if (type.equals("xml")) {
@@ -163,9 +151,6 @@ public class ApplicationRepo implements PanacheRepository<Application> {
     @Transactional
     public void setConfigFileContents(String appName, String type, String contents) {
         Application application = findByName(appName);
-        if (application == null) {
-            throw new IllegalStateException("Could not find application " + appName);
-        }
 
         System.out.println("Setting Contents: " + contents);
         if (type.equals("xml")) {
@@ -189,9 +174,6 @@ public class ApplicationRepo implements PanacheRepository<Application> {
     @Transactional
     public void deleteConfigFileContents(String appName, String type) {
         Application application = findByName(appName);
-        if (application == null) {
-            throw new IllegalStateException("Could not find application " + appName);
-        }
 
         System.out.println("Deleting Config: ");
         if (type.equals("xml")) {
@@ -209,7 +191,6 @@ public class ApplicationRepo implements PanacheRepository<Application> {
         }
     }
 
-    // TODO Get this working and use this rather than all the iterating I am doing
     private AppArchive findByApplicationAndName(Application application, String name) {
         AppArchive appArchive = AppArchive.find("application=:application AND fileName=:name",
                 Parameters

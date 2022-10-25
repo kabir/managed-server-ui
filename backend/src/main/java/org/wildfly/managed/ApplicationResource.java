@@ -46,56 +46,51 @@ public class ApplicationResource {
     }
 
     @POST
-    @ResponseStatus(201)
+    @ResponseStatus(201) // CREATED
     public Application create(Application application) {
         try {
             return applicationRepo.create(application);
         } catch (RuntimeException e) {
-            Throwable cause = e.getCause();
-            while (cause != null) {
-                if (cause instanceof ConstraintViolationException) {
-                    System.out.println("Throwing server exception");
-                    throw new ServerException(Response.Status.CONFLICT, "There is already an application called: " + application.name);
-                    //throw new NotFoundException("There is already an application called: " + application.name);
-                }
-                cause = cause.getCause();
-            }
+            ExceptionUnwrapper
+                    .create(ConstraintViolationException.class,
+                            () -> new ServerException(Response.Status.CONFLICT, "There is already an application called: " + application.name))
+                    .throwServerException(e);
             throw e;
         }
     }
 
+    @ResponseStatus(204) // NO_CONTENT
     @DELETE
     @Path("/{appName}")
     @Transactional
-    public Response delete(String appName) {
-        Application application = applicationRepo.findByName(appName);
-        if (application == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
+    public void delete(String appName) {
+        try {
+            applicationRepo.delete(appName);
+        } catch (RuntimeException e) {
+            ExceptionUnwrapper
+                    .create(ServerException.class, () -> (ServerException) e)
+                    .throwServerException(e);
         }
-
-        applicationRepo.delete(appName);
-        return Response.status(Response.Status.NO_CONTENT).build();
     }
 
+    @ResponseStatus(202) // ACCEPTED
     @POST
     @Path("/{appName}/deploy")
-    public Response deploy(String appName) {
+    public void deploy(String appName) {
         try {
             Application application = applicationRepo.findByName(appName);
-            if (application == null) {
-                return Response.status(Response.Status.NOT_FOUND).build();
-            }
             java.nio.file.Path appDir = uiPaths.getApplicationDir(appName);
             java.nio.file.Path scriptDir = uiPaths.getScriptsDir();
             java.nio.file.Path createApplicationScript =
                     uiPaths.getScriptsDir().resolve(CREATE_APPLICATION_SCRIPT);
 
-
             ProcessBuilder pb = new ProcessBuilder("./" + CREATE_APPLICATION_SCRIPT, appName, "", appDir.toString());
             pb.directory(scriptDir.toFile());
             pb.start();
-
-            return Response.status(Response.Status.ACCEPTED).build();
+        } catch (RuntimeException e) {
+            ExceptionUnwrapper
+                    .create(ServerException.class, () -> (ServerException) e)
+                    .throwServerException(e);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -104,54 +99,119 @@ public class ApplicationResource {
     @GET
     @Path("/{appName}/archive")
     public List<AppArchive> listArchives(String appName) {
-        return applicationRepo.listArchivesForApp(appName);
+        try {
+            return applicationRepo.listArchivesForApp(appName);
+        } catch (RuntimeException e) {
+            ExceptionUnwrapper
+                    .create(ServerException.class, () -> (ServerException) e)
+                    .throwServerException(e);
+            return null;
+        }
     }
 
+    @ResponseStatus(201) // CREATED
     @POST
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Produces(MediaType.TEXT_PLAIN)
     @Path("/{appName}/archive")
-    public Response addArchive(String appName, @MultipartForm DeploymentData data) {
-        System.out.println("--- Add");
-        UploadedFileContext checker = new UploadedFileContext(appName, data);
-        Response response = checker.init();
-        if (response != null) {
-            return response;
+    public void addArchive(String appName, @MultipartForm DeploymentData data) {
+        try {
+            System.out.println("--- Add");
+            UploadedFileContext checker = new UploadedFileContext(appName, data);
+            checker.init();
+            applicationRepo.createApplicationArchive(checker.application, checker.archiveName, checker.configFileInspection);
+        } catch (RuntimeException e) {
+            ExceptionUnwrapper
+                    .create(ServerException.class, () -> (ServerException) e)
+                    .throwServerException(e);
         }
-
-        applicationRepo.createApplicationArchive(checker.application, checker.archiveName, checker.configFileInspection);
-
-        return Response.status(Response.Status.ACCEPTED).build();
-
     }
 
+    @ResponseStatus(202) // ACCEPTED
     @PUT
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Produces(MediaType.TEXT_PLAIN)
     @Path("/{appName}/archive/{archiveName}")
-    public Response replaceArchive(String appName, String archiveName, @MultipartForm DeploymentData data) {
-        System.out.println("--- Replace");
-        UploadedFileContext checker = new UploadedFileContext(appName, archiveName, data);
-        Response response = checker.init();
-        if (response != null) {
-            return response;
+    public void replaceArchive(String appName, String archiveName, @MultipartForm DeploymentData data) {
+        try {
+            System.out.println("--- Replace");
+            UploadedFileContext checker = new UploadedFileContext(appName, archiveName, data);
+            checker.init();
+            applicationRepo.updateApplicationArchive(checker.application, checker.archiveName, checker.configFileInspection);
+        } catch (RuntimeException e) {
+            ExceptionUnwrapper
+                    .create(ServerException.class, () -> (ServerException) e)
+                    .throwServerException(e);
         }
-
-        applicationRepo.updateApplicationArchive(checker.application, checker.archiveName, checker.configFileInspection);
-
-        return Response.status(Response.Status.ACCEPTED).build();
     }
 
+    @ResponseStatus(204) // NO_CONTENT
     @DELETE
     @Path("/{appName}/archive/{archiveName}")
-    public Response deleteArchive(String appName, String archiveName) {
+    public void deleteArchive(String appName, String archiveName) {
         Application application = applicationRepo.findByName(appName);
-        if (application == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
-
         applicationRepo.deleteApplicationArchive(application, archiveName);
-        return Response.status(Response.Status.NO_CONTENT).build();
+    }
+
+    @GET
+    @Path("/{appName}/config-file")
+    public String getConfigFileContents(String appName, @QueryParam("type") String type) {
+        System.out.println("---> get config");
+        try {
+            return applicationRepo.getConfigFileContents(appName, type);
+        } catch (RuntimeException e) {
+            ExceptionUnwrapper
+                    .create(ServerException.class, () -> (ServerException) e)
+                    .throwServerException(e);
+            return null;
+        }
+    }
+
+    @ResponseStatus(204) // NO_CONTENT
+    @PUT
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Produces(MediaType.TEXT_PLAIN)
+    @Path("/{appName}/config-file")
+    public void setConfigFileContents(String appName, @QueryParam("type") String type, @MultipartForm DeploymentData dto) {
+        System.out.println("---> replace config");
+        try {
+            String contents = null;
+            try {
+                contents = Files.readString(dto.file.uploadedFile());
+            } catch (IOException e) {
+                throw new IllegalStateException(e);
+            }
+            System.out.println("---> " + contents);
+            applicationRepo.setConfigFileContents(appName, type, contents);
+        } catch (RuntimeException e) {
+            ExceptionUnwrapper
+                    .create(ServerException.class, () -> (ServerException) e)
+                    .throwServerException(e);
+        }
+    }
+
+    @ResponseStatus(204) // NO_CONTENT
+    @DELETE
+    @Path("/{appName}/config-file")
+    public void deleteConfigFileContents(String appName, @QueryParam("type") String type) {
+        try {
+            System.out.println("---> delete config");
+            applicationRepo.deleteConfigFileContents(appName, type);
+        } catch (RuntimeException e) {
+            ExceptionUnwrapper
+                    .create(ServerException.class, () -> (ServerException) e)
+                    .throwServerException(e);
+        }
+    }
+
+    @ServerExceptionMapper
+    RestResponse<Object> mapException(ServerException e) {
+        return RestResponse.ResponseBuilder
+                // Sets the exception message in the body, but that is ignored on the client
+                .create(e.getStatus().getStatusCode(), e.getMessage())
+                // ... so try setting it in a header
+                .header(WEB_ERROR_DESCRIPTION_HEADER_NAME, e.getMessage())
+                .build();
     }
 
     private class UploadedFileContext {
@@ -172,20 +232,18 @@ public class ApplicationResource {
             this.data = data;
         }
 
-        private Response init() {
+        private void init() {
             application = applicationRepo.findByName(appName);
-            if (application == null) {
-                return Response.status(Response.Status.NOT_FOUND).build();
-            }
+
             java.nio.file.Path path = data.file.uploadedFile();
 
             if (!data.file.fileName().endsWith(".war")) {
-                return Response.status(Response.Status.UNSUPPORTED_MEDIA_TYPE).build();
+                throw new ServerException(Response.Status.UNSUPPORTED_MEDIA_TYPE, "Only .war archives can be uploaded.");
             }
 
             String fileName = data.file.fileName();
             if (archiveName != null && !archiveName.equals(fileName)) {
-                return Response.status(Response.Status.CONFLICT).build();
+                throw new ServerException(Response.Status.CONFLICT, "Bad request, the archive name should match the actual file name.");
             }
             archiveName = fileName;
             dest = uiPaths.getApplicationDir(appName).resolve(fileName);
@@ -197,52 +255,8 @@ public class ApplicationResource {
                 Files.move(data.file.uploadedFile(), dest);
                 configFileInspection = ConfigFileInspection.inspect(dest);
             } catch (IOException e) {
-                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
+                throw new RuntimeException("An error happened copying the files on the server");
             }
-            return null;
         }
     }
-
-    @GET
-    @Path("/{appName}/config-file")
-    public String getConfigFileContents(String appName, @QueryParam("type") String type) {
-        System.out.println("---> get config");
-        return applicationRepo.getConfigFileContents(appName, type);
-    }
-
-    @PUT
-    @Consumes(MediaType.MULTIPART_FORM_DATA)
-    @Produces(MediaType.TEXT_PLAIN)
-    @Path("/{appName}/config-file")
-    public Response setConfigFileContents(String appName, @QueryParam("type") String type, @MultipartForm DeploymentData dto) {
-        System.out.println("---> replace config");
-        String contents = null;
-        try {
-            contents = Files.readString(dto.file.uploadedFile());
-        } catch (IOException e) {
-            throw new IllegalStateException(e);
-        }
-        System.out.println("---> " + contents);
-        applicationRepo.setConfigFileContents(appName, type, contents);
-        return Response.status(Response.Status.NO_CONTENT).build();
-    }
-
-    @DELETE
-    @Path("/{appName}/config-file")
-    public Response deleteConfigFileContents(String appName, @QueryParam("type") String type) {
-        System.out.println("---> delete config");
-        applicationRepo.deleteConfigFileContents(appName, type);
-        return Response.status(Response.Status.NO_CONTENT).build();
-    }
-
-    @ServerExceptionMapper
-    RestResponse<Object> mapException(ServerException e) {
-        return RestResponse.ResponseBuilder
-                // Sets the exception message in the body, but that is ignored on the client
-                .create(e.getStatus().getStatusCode(), e.getMessage())
-                // ... so try setting it in a header
-                .header(WEB_ERROR_DESCRIPTION_HEADER_NAME, e.getMessage())
-                .build();
-    }
-
 }

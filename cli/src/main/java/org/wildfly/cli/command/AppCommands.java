@@ -91,12 +91,15 @@ public class AppCommands {
         @Override
         public void run() {
             String activeApp = cliContext.getActiveApp();
-            applicationService.delete(name);
-            System.out.println("Application '" + name + "' deleted");
-            if (name.equals(activeApp)) {
-                System.out.println("Since this was the currently active application, the active application has been cleared");
+            try {
+                applicationService.delete(name);
+                System.out.println("Application '" + name + "' deleted");
+                if (name.equals(activeApp)) {
+                    System.out.println("Since this was the currently active application, the active application has been cleared");
+                }
+            } catch (CommandFailedException e) {
+                System.err.println(e.getMessage());
             }
-
         }
     }
 
