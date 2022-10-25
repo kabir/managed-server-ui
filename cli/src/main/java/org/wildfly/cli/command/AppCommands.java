@@ -3,6 +3,7 @@ package org.wildfly.cli.command;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.wildfly.cli.CliContext;
 import org.wildfly.cli.rest.client.ApplicationService;
+import org.wildfly.cli.rest.client.CommandFailedException;
 import org.wildfly.cli.rest.client.DeploymentDto;
 import org.wildfly.cli.util.TableOutputter;
 import org.wildfly.managed.common.model.AppArchive;
@@ -57,11 +58,15 @@ public class AppCommands {
 
         @Override
         public void run() {
-            Application application = new Application();
-            application.name = name;
-            applicationService.create(application);
-            cliContext.setActiveApp(name);
-            System.out.println("Application " + name + " created and set as the active application.");
+            try {
+                Application application = new Application();
+                application.name = name;
+                applicationService.create(application);
+                cliContext.setActiveApp(name);
+                System.out.println("Application " + name + " created and set as the active application.");
+            } catch (CommandFailedException e) {
+                System.err.println(e.getMessage());
+            }
         }
     }
 

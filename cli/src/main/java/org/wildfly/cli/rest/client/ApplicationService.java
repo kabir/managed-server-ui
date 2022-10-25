@@ -1,6 +1,5 @@
 package org.wildfly.cli.rest.client;
 
-import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.jboss.resteasy.reactive.MultipartForm;
@@ -20,7 +19,7 @@ import java.util.List;
 
 @Path("/app")
 @RegisterRestClient(configKey = "managed-server-ui-backend")
-@RegisterProvider(ApplicationServiceExceptionMapper.class)
+@RegisterProvider(ClientHeaderErrorReader.class)
 public interface ApplicationService {
     @GET
     List<Application> list();
@@ -39,7 +38,7 @@ public interface ApplicationService {
 
     @GET
     @Path("/{appName}/archive")
-    List<AppArchive>  listArchives(String appName);
+    List<AppArchive> listArchives(String appName);
 
     @POST
     @Consumes(MediaType.MULTIPART_FORM_DATA)

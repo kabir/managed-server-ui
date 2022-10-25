@@ -26,6 +26,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.List;
 
+import static org.wildfly.managed.common.util.Constants.WEB_ERROR_DESCRIPTION_HEADER_NAME;
+
 @Path("/app")
 public class ApplicationResource {
 
@@ -54,6 +56,7 @@ public class ApplicationResource {
                 if (cause instanceof ConstraintViolationException) {
                     System.out.println("Throwing server exception");
                     throw new ServerException(Response.Status.CONFLICT, "There is already an application called: " + application.name);
+                    //throw new NotFoundException("There is already an application called: " + application.name);
                 }
                 cause = cause.getCause();
             }
@@ -233,9 +236,13 @@ public class ApplicationResource {
     }
 
     @ServerExceptionMapper
-    RestResponse<String> mapException(ServerException e) {
-        System.out.println("----> Converting exception " + e.getStatus() + " " + e.getMessage());
-        return RestResponse.status(e.getStatus(), e.getMessage());
+    RestResponse<Object> mapException(ServerException e) {
+        return RestResponse.ResponseBuilder
+                // Sets the exception message in the body, but that is ignored on the client
+                .create(e.getStatus().getStatusCode(), e.getMessage())
+                // ... so try setting it in a header
+                .header(WEB_ERROR_DESCRIPTION_HEADER_NAME, e.getMessage())
+                .build();
     }
 
 }
