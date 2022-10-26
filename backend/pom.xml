@@ -10,6 +10,11 @@
   <artifactId>managed-server-ui-backend</artifactId>
   <dependencies>
     <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>managed-server-ui-common</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-arc</artifactId>
     </dependency>
@@ -50,28 +55,6 @@
   </dependencies>
   <build>
     <plugins>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>build-helper-maven-plugin</artifactId>
-        <version>3.0.0</version>
-        <executions>
-          <execution>
-            <phase>generate-sources</phase>
-            <goals>
-              <goal>add-source</goal>
-            </goals>
-            <configuration>
-              <sources>
-                <!--
-                  Including this as a normal dependency doesn't seem to register the
-                  entities, so try to compile it in instead.
-                -->
-                <source>../common/src/main/java</source>
-              </sources>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
       <plugin>
         <groupId>${quarkus.platform.group-id}</groupId>
         <artifactId>quarkus-maven-plugin</artifactId>
