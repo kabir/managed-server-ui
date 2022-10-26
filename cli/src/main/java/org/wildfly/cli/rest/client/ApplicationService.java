@@ -20,6 +20,7 @@ import java.util.List;
 @Path("/app")
 @RegisterRestClient(configKey = "managed-server-ui-backend")
 @RegisterProvider(ClientHeaderErrorReader.class)
+@ExitingOnError
 public interface ApplicationService {
     @GET
     List<Application> list();

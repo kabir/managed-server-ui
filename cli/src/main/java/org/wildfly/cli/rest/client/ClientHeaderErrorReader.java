@@ -28,8 +28,7 @@ public class ClientHeaderErrorReader implements ClientResponseFilter {
 
             if (errorMessage != null) {
                 errorMessage = "ERROR: " + errorMessage;
-                System.err.println(errorMessage);
-                System.exit(1);
+                throw new ClientHeaderErrorException(errorMessage);
             }
         }
     }
