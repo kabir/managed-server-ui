@@ -1,6 +1,8 @@
 package org.wildfly.managed.common.model;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
+
+import org.hibernate.annotations.LazyGroup;
 import org.hibernate.annotations.Type;
 
 import javax.persistence.Basic;
@@ -22,7 +24,8 @@ public class Application extends PanacheEntity {
     public Collection<AppArchive> appArchives = new HashSet<>();
 
     @Column
-    @Basic(fetch=LAZY)
+    @Basic(fetch = LAZY)
+    @LazyGroup("serverConfigXml")
     // org.hibernate.type.TextType is Postgres only, and avoids the large object store
     @Type( type = "text")
     public String serverConfigXml;
@@ -30,7 +33,8 @@ public class Application extends PanacheEntity {
     public boolean hasServerConfigXml;
 
     @Column
-    @Basic(fetch=LAZY)
+    @Basic(fetch = LAZY)
+    @LazyGroup("serverInitCli")
     // org.hibernate.type.TextType is Postgres only, and avoids the large object store
     @Type( type = "text")
     public String serverInitCli;
@@ -38,7 +42,8 @@ public class Application extends PanacheEntity {
     public boolean hasServerInitCli;
 
     @Column
-    @Basic(fetch=LAZY)
+    @Basic(fetch = LAZY)
+    @LazyGroup("serverInitYml")
     // org.hibernate.type.TextType is Postgres only, and avoids the large object store
     @Type( type = "text")
     public String serverInitYml;
