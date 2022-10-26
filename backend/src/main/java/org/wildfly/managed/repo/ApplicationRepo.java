@@ -155,23 +155,14 @@ public class ApplicationRepo implements PanacheRepository<Application> {
         System.out.println("Setting Contents: " + contents);
         if (type.equals("xml")) {
             System.out.println("xml!");
-            // Fake read to load the lazy field to be able update it
-            String temp = application.serverConfigXml;
-
             application.serverConfigXml = contents;
             application.hasServerConfigXml = contents != null;
         } else if (type.equals("cli")) {
             System.out.println("cli!");
-            // Fake read to load the lazy field to be able update it
-            String temp = application.serverInitCli;
-
             application.serverInitCli = contents;
             application.hasServerInitCli = contents != null;
         } else if (type.equals("yml")) {
             System.out.println("yml!");
-            // Fake read to load the lazy field to be able update it
-            String temp = application.serverInitYml;
-
             application.serverInitYml = contents;
             application.hasServerInitYml = contents != null;
         }
@@ -184,14 +175,18 @@ public class ApplicationRepo implements PanacheRepository<Application> {
         System.out.println("Deleting Config: ");
         if (type.equals("xml")) {
             System.out.println("xml!");
+            // Lazy load field to make clearing it take effect
+            String tmp = application.serverConfigXml;
             application.serverConfigXml = null;
             application.hasServerConfigXml = false;
         } else if (type.equals("cli")) {
             System.out.println("cli!");
+            String tmp = application.serverInitCli;
             application.serverInitCli = null;
-            application.hasServerInitCli =false;
+            application.hasServerInitCli = false;
         } else if (type.equals("yml")) {
             System.out.println("yml!");
+            String tmp = application.serverInitYml;
             application.serverInitYml = null;
             application.hasServerInitYml = false;
         }
