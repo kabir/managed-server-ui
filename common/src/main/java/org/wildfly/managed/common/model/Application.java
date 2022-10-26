@@ -9,6 +9,7 @@ import javax.persistence.Basic;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.OneToMany;
+import java.sql.Date;
 import java.util.Collection;
 import java.util.HashSet;
 
@@ -44,5 +45,11 @@ public class Application extends PanacheEntity {
 
     public boolean hasServerInitYml;
 
+    public void loadLazyFields() {
+        Object tmp = serverConfigXml;
+        tmp = serverInitCli;
+        tmp = serverInitYml;
+        tmp = appArchives;
+    }
 }
 

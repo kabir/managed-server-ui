@@ -27,6 +27,10 @@ public interface ApplicationService {
     @POST
     Application create(Application application);
 
+    @GET
+    @Path("/{name}")
+    Application get(String name, @QueryParam("verbose") boolean verbose);
+
     @DELETE
     @Path("/{name}")
     void delete(String name);

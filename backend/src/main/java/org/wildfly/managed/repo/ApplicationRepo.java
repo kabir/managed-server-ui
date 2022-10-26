@@ -12,6 +12,7 @@ import javax.transaction.Transactional;
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -33,6 +34,22 @@ public class ApplicationRepo implements PanacheRepository<Application> {
         return application;
     }
 
+    @Transactional
+    public Application getApplication(String name, boolean verbose) {
+        Application application = findByName(name);
+        if (verbose) {
+            application.loadLazyFields();
+        }
+        getEntityManager().detach(application);
+
+        if (!verbose) {
+            application.appArchives = Collections.emptyList();
+            application.serverConfigXml = null;
+            application.serverInitCli = null;
+            application.serverInitYml = null;
+        }
+        return application;
+    }
 
     @Transactional
     public void delete(String name) {

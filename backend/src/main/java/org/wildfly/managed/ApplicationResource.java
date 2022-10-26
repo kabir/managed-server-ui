@@ -45,6 +45,13 @@ public class ApplicationResource {
         return applicationRepo.listAll();
     }
 
+    @GET
+    @Path("/{name}")
+    public Application get(String name, @QueryParam("verbose") boolean verbose) {
+        return applicationRepo.getApplication(name, verbose);
+    }
+
+
     @POST
     @ResponseStatus(201) // CREATED
     public Application create(Application application) {

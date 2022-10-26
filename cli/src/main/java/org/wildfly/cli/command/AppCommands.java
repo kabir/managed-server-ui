@@ -40,7 +40,7 @@ public class AppCommands {
         protected String validateActiveApp() {
             String activeApp = cliContext.getActiveApp();
             if (activeApp == null) {
-                System.err.println("No active application is set. Cannot deploy.");
+                System.err.println("No active application is set. Cannot continue.");
                 System.exit(1);
             }
             return activeApp;
@@ -94,28 +94,46 @@ public class AppCommands {
         }
     }
 
-    @Command(name = "get", description = "Gets the current application", mixinStandardHelpOptions = true)
+    @Command(name = "get", description = "Gets information about an application", mixinStandardHelpOptions = true)
     static class GetCommand extends BaseAppCommand {
 
         @Inject
-        ArchiveCommands.ListCommand listCommand;
+        ArchiveCommands.ListCommand archiveListCommand;
 
         @CommandLine.Option(names = {"-v", "--verbose"}, description = "Output detailed information")
         boolean verbose;
 
+        @CommandLine.Option(names = {"-n", "--name"}, description = "Name of the application. If omitted, the current application is used.")
+        String appName;
+
         @Override
         public void run() {
-            String name = cliContext.getActiveApp();
-            if (name == null) {
-                System.out.println("No application is currently active");
-            } else {
-                System.out.println(name);
-                if (verbose) {
-                    System.out.println("");
-                    listCommand.fromCommandLine = false;
-                    listCommand.run();
-                }
 
+            String name;
+            if (appName == null) {
+                name = validateActiveApp();
+            } else {
+                name = appName;
+            }
+
+
+            System.out.println(name);
+            // Load it to check it is there whether verbose or not
+            Application app = applicationService.get(name, false);
+            if (!verbose) {
+            } else {
+                System.out.println("");
+                System.out.println("Status: " + app.state);
+                System.out.println("");
+                System.out.println("Configs");
+                System.out.println("-------");
+                System.out.println("XML: " + (app.hasServerConfigXml ? "y" : ""));
+                System.out.println("CLI: " + (app.hasServerInitCli ? "y" : ""));
+                System.out.println("YML: " + (app.hasServerInitYml ? "y" : ""));
+
+                System.out.println("");
+                archiveListCommand.fromCommandLine = false;
+                archiveListCommand.run();
             }
         }
     }
