@@ -155,20 +155,26 @@ public class ApplicationRepo implements PanacheRepository<Application> {
         System.out.println("Setting Contents: " + contents);
         if (type.equals("xml")) {
             System.out.println("xml!");
+            // Fake read to load the lazy field to be able update it
+            String temp = application.serverConfigXml;
+
             application.serverConfigXml = contents;
             application.hasServerConfigXml = contents != null;
         } else if (type.equals("cli")) {
             System.out.println("cli!");
+            // Fake read to load the lazy field to be able update it
+            String temp = application.serverInitCli;
+
             application.serverInitCli = contents;
             application.hasServerInitCli = contents != null;
         } else if (type.equals("yml")) {
             System.out.println("yml!");
+            // Fake read to load the lazy field to be able update it
+            String temp = application.serverInitYml;
+
             application.serverInitYml = contents;
             application.hasServerInitYml = contents != null;
         }
-        // These don't make a difference
-        //getEntityManager().merge(application);
-        //getEntityManager().flush();
     }
 
     @Transactional

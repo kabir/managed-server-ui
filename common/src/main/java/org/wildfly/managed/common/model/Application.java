@@ -23,28 +23,22 @@ public class Application extends PanacheEntity {
     @OneToMany(mappedBy = "application")
     public Collection<AppArchive> appArchives = new HashSet<>();
 
-    @Column
     @Basic(fetch = LAZY)
     @LazyGroup("serverConfigXml")
-    // org.hibernate.type.TextType is Postgres only, and avoids the large object store
     @Type( type = "text")
     public String serverConfigXml;
 
     public boolean hasServerConfigXml;
 
-    @Column
     @Basic(fetch = LAZY)
     @LazyGroup("serverInitCli")
-    // org.hibernate.type.TextType is Postgres only, and avoids the large object store
     @Type( type = "text")
     public String serverInitCli;
 
     public boolean hasServerInitCli;
 
-    @Column
     @Basic(fetch = LAZY)
     @LazyGroup("serverInitYml")
-    // org.hibernate.type.TextType is Postgres only, and avoids the large object store
     @Type( type = "text")
     public String serverInitYml;
 
