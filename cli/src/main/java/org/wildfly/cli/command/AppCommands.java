@@ -236,6 +236,11 @@ public class AppCommands {
             public void run() {
                 String activeApp = validateActiveApp();
 
+                if (paths  == null || paths.size() == 0) {
+                    System.err.println("Need top specify at least one path to an archive");
+                    System.exit(1);
+                }
+
                 for (java.nio.file.Path path : paths) {
                     if (!Files.exists(path)) {
                         System.err.println(path + " not found");

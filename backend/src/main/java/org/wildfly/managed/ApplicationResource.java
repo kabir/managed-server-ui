@@ -8,6 +8,7 @@ import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 import org.wildfly.managed.common.model.AppArchive;
 import org.wildfly.managed.common.model.Application;
 import org.wildfly.managed.config.UiPaths;
+import org.wildfly.managed.openshift.OpenshiftFacade;
 import org.wildfly.managed.repo.ApplicationRepo;
 
 import javax.inject.Inject;
@@ -31,14 +32,15 @@ import static org.wildfly.managed.common.util.Constants.WEB_ERROR_DESCRIPTION_HE
 @Path("/app")
 public class ApplicationResource {
 
-    private static final String CREATE_APPLICATION_SCRIPT = "create-application.sh";
-    private static final String UPDATE_APPLICATION_SCRIPT = "update-application.sh";
 
     @Inject
     UiPaths uiPaths;
 
     @Inject
     ApplicationRepo applicationRepo;
+
+    @Inject
+    OpenshiftFacade openshiftFacade;
 
     @GET
     public List<Application> list() {
@@ -77,29 +79,6 @@ public class ApplicationResource {
             ExceptionUnwrapper
                     .create(ServerException.class, () -> (ServerException) e)
                     .throwServerException(e);
-        }
-    }
-
-    @ResponseStatus(202) // ACCEPTED
-    @POST
-    @Path("/{appName}/deploy")
-    public void deploy(String appName) {
-        try {
-            Application application = applicationRepo.findByName(appName);
-            java.nio.file.Path appDir = uiPaths.getApplicationDir(appName);
-            java.nio.file.Path scriptDir = uiPaths.getScriptsDir();
-            java.nio.file.Path createApplicationScript =
-                    uiPaths.getScriptsDir().resolve(CREATE_APPLICATION_SCRIPT);
-
-            ProcessBuilder pb = new ProcessBuilder("./" + CREATE_APPLICATION_SCRIPT, appName, "", appDir.toString());
-            pb.directory(scriptDir.toFile());
-            pb.start();
-        } catch (RuntimeException e) {
-            ExceptionUnwrapper
-                    .create(ServerException.class, () -> (ServerException) e)
-                    .throwServerException(e);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
         }
     }
 
@@ -210,6 +189,21 @@ public class ApplicationResource {
                     .throwServerException(e);
         }
     }
+
+    @ResponseStatus(202) // ACCEPTED
+    @POST
+    @Path("/{appName}/deploy")
+    public void deploy(String appName) {
+        try {
+            openshiftFacade.deploy(appName);
+        } catch (RuntimeException e) {
+            ExceptionUnwrapper
+                    .create(ServerException.class, () -> (ServerException) e)
+                    .throwServerException(e);
+        }
+    }
+
+
 
     @ServerExceptionMapper
     RestResponse<Object> mapException(ServerException e) {

@@ -3,33 +3,17 @@
 
 appName="${1}"
 helmChart="${2}"
-appFolder="${3}"
 
-# TODO helm install if we need a helm chart
+helm list --filter "${appName}$" | grep -q "${appName}" && found=1 || found=0
 
-# TODO Don't hardcode the path to the chart, rather it should be installed with `helm repo add`
-# populated mode is currently broken
-#helm install ${appName} \
-# /Users/kabir/sourcecontrol/wildfly/managed-wildfly-chart/managed-wildfly-chart-0.1.0.tgz \
-#  --set builder.mode=populated
-
-helm install ${appName} \
- /Users/kabir/sourcecontrol/wildfly/managed-wildfly-chart/managed-wildfly-chart-0.1.0.tgz
-
-oc start-build ${appName}-deployment-build  --from-file=${appFolder}/ROOT.war
+if [ ${found} -eq 0 ]; then
+  # TODO populated mode is currently broken
+  # TODO helm repo add rather than hardcoding the path to the tar?
+  #helm install ${appName} \
+  # /Users/kabir/sourcecontrol/wildfly/managed-wildfly-chart/managed-wildfly-chart-0.1.0.tgz \
+  #  --set builder.mode=populated
+  helm install ${appName} \
+   /Users/kabir/sourcecontrol/wildfly/managed-wildfly-chart/managed-wildfly-chart-0.1.0.tgz
+fi
 
 
-
-#!/bin/sh
-
-
-appName="${1}"
-helmChart="${2}"
-appFolder="${3}"
-
-# TODO helm install if we need a helm chart
-
-helm install ${appName} \
- /Users/kabir/sourcecontrol/wildfly/managed-wildfly-chart/managed-wildfly-chart-0.1.0.tgz
-
-oc start-build ${appName}-deployment-build  --from-file=${appFolder}/ROOT.war

@@ -24,9 +24,6 @@
     <dependency>
       <groupId>info.picocli</groupId>
       <artifactId>picocli-codegen</artifactId>
-<!--
-      <scope>provided</scope>
--->
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
@@ -39,6 +36,10 @@
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-agroal</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-openshift-client</artifactId>
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
@@ -69,7 +70,6 @@
             <arg>-parameters</arg>
           </compilerArgs>
           <annotationProcessorPaths>
-            <!-- Turns off adding the META-INF/panache-archive.marker file -->
             <annotationProcessorPath>
               <groupId>org.hibernate</groupId>
               <artifactId>hibernate-jpamodelgen</artifactId>
