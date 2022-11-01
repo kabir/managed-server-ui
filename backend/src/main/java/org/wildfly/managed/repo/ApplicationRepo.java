@@ -166,6 +166,15 @@ public class ApplicationRepo implements PanacheRepository<Application> {
     }
 
     @Transactional
+    public ApplicationConfigs getConfigFileContents(String appName) {
+        Application application = findByName(appName);
+        return new ApplicationConfigs(
+                application.serverConfigXml,
+                application.serverInitYml,
+                application.serverInitCli);
+    }
+
+    @Transactional
     public void setConfigFileContents(String appName, String type, String contents) {
         Application application = findByName(appName);
 
@@ -216,4 +225,5 @@ public class ApplicationRepo implements PanacheRepository<Application> {
                         .and("name", name)).firstResult();
         return appArchive;
     }
+
 }
