@@ -1,14 +1,17 @@
 package org.wildfly.managed.openshift;
 
+import io.fabric8.kubernetes.api.model.apps.Deployment;
+import io.fabric8.kubernetes.api.model.apps.DeploymentStatus;
 import io.fabric8.openshift.api.model.Build;
-import io.fabric8.openshift.api.model.BuildBuilder;
-import io.fabric8.openshift.api.model.BuildConfig;
+import io.fabric8.openshift.api.model.BuildList;
+import io.fabric8.openshift.api.model.BuildStatus;
+import io.fabric8.openshift.api.model.Route;
+import io.fabric8.openshift.api.model.RouteList;
 import io.fabric8.openshift.client.OpenShiftClient;
-import io.fabric8.openshift.client.OpenShiftHandlers;
 import org.wildfly.managed.ServerException;
 import org.wildfly.managed.common.model.AppArchive;
 import org.wildfly.managed.common.model.Application;
-import org.wildfly.managed.common.util.Constants;
+import org.wildfly.managed.common.value.AppState;
 import org.wildfly.managed.config.UiPaths;
 import org.wildfly.managed.repo.ApplicationConfigs;
 import org.wildfly.managed.repo.ApplicationRepo;
@@ -19,12 +22,9 @@ import javax.ws.rs.core.Response;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -158,4 +158,58 @@ public class OpenshiftFacade {
         }
     }
 
+    public AppState getStatus(String appName) {
+        AppState.DeploymentState deploymentState = getDeploymentStatus(appName);
+        AppState.BuildState buildState = getBuildState(appName);
+
+
+        if (deploymentState == AppState.DeploymentState.RUNNING) {
+            RouteList routes = openShiftClient.routes().withLabel("app", appName).list();
+            List<String> appRoutes = new ArrayList<>();
+            for (Route route : routes.getItems()) {
+                // TODO get the route information
+            }
+        }
+        return new AppState(deploymentState, buildState);
+    }
+
+    private AppState.DeploymentState getDeploymentStatus(String appName) {
+        Deployment deployment = openShiftClient.apps().deployments().withName(appName).get();
+        if (deployment == null) {
+            return AppState.DeploymentState.NOT_DEPLOYED;
+        }
+        DeploymentStatus status = deployment.getStatus();
+        if (status.getReplicas().equals(status.getReadyReplicas())) {
+            // Is this the right check?
+            return AppState.DeploymentState.RUNNING;
+        }
+
+        // TODO needs more tightening up. There might be errors etc, or scaling considerations etc.
+        return AppState.DeploymentState.DEPLOYING;
+    }
+
+    private AppState.BuildState getBuildState(String appName) {
+        BuildList buildList = openShiftClient.builds().withLabel("app", appName).list();
+
+        // TODO don't include old builds
+        System.out.println("Checking build statuses");
+        for (Build build : buildList.getItems()) {
+            BuildStatus status = build.getStatus();
+            String start = status.getStartTimestamp();
+            String completion = status.getCompletionTimestamp();
+            System.out.println(status);
+            if (start != null && completion == null) {
+                return AppState.BuildState.RUNNING;
+            }
+            if (start == null && completion == null) {
+                // This really means the build is pending. For the purposes of the CLI, a soon to start
+                // build indicates the overall build is running.
+                return AppState.BuildState.RUNNING;
+            }
+            // TODO how to find errors?
+        }
+
+        // TODO figure out how to determine the state of each build from their BuildStatus
+        return AppState.BuildState.COMPLETED;
+    }
 }

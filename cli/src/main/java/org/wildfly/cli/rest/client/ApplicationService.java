@@ -5,6 +5,7 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.jboss.resteasy.reactive.MultipartForm;
 import org.wildfly.managed.common.model.AppArchive;
 import org.wildfly.managed.common.model.Application;
+import org.wildfly.managed.common.value.AppState;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -75,5 +76,8 @@ public interface ApplicationService {
     @Path("/{appName}/config-file")
     void deleteConfigFileContents(String appName, @QueryParam("type") String type);
 
+    @GET
+    @Path("/{appName}/status")
+    AppState status(String appName);
 
 }

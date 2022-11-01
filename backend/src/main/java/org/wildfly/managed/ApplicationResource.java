@@ -7,6 +7,7 @@ import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 import org.wildfly.managed.common.model.AppArchive;
 import org.wildfly.managed.common.model.Application;
+import org.wildfly.managed.common.value.AppState;
 import org.wildfly.managed.config.UiPaths;
 import org.wildfly.managed.openshift.OpenshiftFacade;
 import org.wildfly.managed.repo.ApplicationRepo;
@@ -200,6 +201,19 @@ public class ApplicationResource {
             ExceptionUnwrapper
                     .create(ServerException.class, () -> (ServerException) e)
                     .throwServerException(e);
+        }
+    }
+
+    @GET
+    @Path("/{appName}/status")
+    public AppState status(String appName) {
+        try {
+            return openshiftFacade.getStatus(appName);
+        } catch (RuntimeException e) {
+            ExceptionUnwrapper
+                    .create(ServerException.class, () -> (ServerException) e)
+                    .throwServerException(e);
+            return null;
         }
     }
 

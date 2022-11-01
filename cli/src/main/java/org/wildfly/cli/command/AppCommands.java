@@ -7,6 +7,7 @@ import org.wildfly.cli.rest.client.DeploymentDto;
 import org.wildfly.cli.util.TableOutputter;
 import org.wildfly.managed.common.model.AppArchive;
 import org.wildfly.managed.common.model.Application;
+import org.wildfly.managed.common.value.AppState;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 
@@ -25,6 +26,7 @@ import java.util.List;
                 AppCommands.DeleteCommand.class,
                 AppCommands.ListCommand.class,
                 AppCommands.DeployCommand.class,
+                AppCommands.StatusCommand.class,
                 AppCommands.ArchiveCommands.class,
                 AppCommands.ConfigCommands.class
         })
@@ -166,9 +168,6 @@ public class AppCommands {
 
     @Command(name = "deploy", description = "Deploy the application", mixinStandardHelpOptions = true)
     static class DeployCommand extends BaseAppCommand {
-        @RestClient
-        ApplicationService applicationService;
-
         @Override
         public void run() {
             String activeApp = validateActiveApp();
@@ -176,6 +175,20 @@ public class AppCommands {
             applicationService.deploy(activeApp);
         }
     }
+
+    @Command(name = "status", description = "Gets the application status", mixinStandardHelpOptions = true)
+    static class StatusCommand extends BaseAppCommand {
+        @Override
+        public void run() {
+            String activeApp = validateActiveApp();
+
+            AppState appStatus = applicationService.status(activeApp);
+            // TODO fill in :-)
+            System.out.println("Deployment: " + appStatus.getDeploymentState());
+            System.out.println("Build: " + appStatus.getBuildState());
+        }
+    }
+
 
     @Command(
             name = "archive",
@@ -236,7 +249,7 @@ public class AppCommands {
             public void run() {
                 String activeApp = validateActiveApp();
 
-                if (paths  == null || paths.size() == 0) {
+                if (paths == null || paths.size() == 0) {
                     System.err.println("Need top specify at least one path to an archive");
                     System.exit(1);
                 }
