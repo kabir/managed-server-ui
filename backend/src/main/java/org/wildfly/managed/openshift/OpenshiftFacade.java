@@ -35,8 +35,8 @@ import static org.wildfly.managed.common.util.Constants.SERVER_INIT_YML;
 
 @ApplicationScoped
 public class OpenshiftFacade {
-    private static final String CREATE_APPLICATION_SCRIPT = "create-application.sh";
-    private static final String UPDATE_APPLICATION_SCRIPT = "update-application.sh";
+    private static final String INSTALL_HELM_SCRIPT = "install-helm.sh";
+    private static final String UNINSTALL_HELM_SCRIPT = "uninstall-helm.sh";
 
     @Inject
     ApplicationRepo applicationRepo;
@@ -50,7 +50,7 @@ public class OpenshiftFacade {
 
     public String deploy(String appName, boolean force, boolean refresh) {
 
-        runScript(CREATE_APPLICATION_SCRIPT, appName, "");
+        runScript(INSTALL_HELM_SCRIPT, appName, "");
 
         List<AppArchive> archives = applicationRepo.listArchivesForApp(appName);
         if (archives.size() == 0) {
@@ -192,6 +192,16 @@ public class OpenshiftFacade {
         return new AppState(deploymentState, buildState);
     }
 
+    public void delete(String appName) {
+        openShiftClient.apps().deployments().withLabel("app", appName).delete();
+        runScript(UNINSTALL_HELM_SCRIPT, appName);
+    }
+
+    public void stop(String appName) {
+        openShiftClient.builds().withLabel("app", appName).delete();
+        openShiftClient.apps().deployments().withLabel("app", appName).delete();
+    }
+
     private AppState.DeploymentState getDeploymentStatus(String appName) {
         Deployment deployment = openShiftClient.apps().deployments().withName(appName).get();
         if (deployment == null) {
@@ -217,7 +227,6 @@ public class OpenshiftFacade {
             BuildStatus status = build.getStatus();
             String start = status.getStartTimestamp();
             String completion = status.getCompletionTimestamp();
-            System.out.println(status);
             if (start != null && completion == null) {
                 return AppState.BuildState.RUNNING;
             }
@@ -249,4 +258,5 @@ public class OpenshiftFacade {
     private void deleteAllBuilds(String appName) {
         openShiftClient.builds().withLabel("app", appName).delete();
     }
+
 }

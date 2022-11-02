@@ -26,6 +26,7 @@ import java.util.List;
                 AppCommands.DeleteCommand.class,
                 AppCommands.ListCommand.class,
                 AppCommands.DeployCommand.class,
+                AppCommands.StopCommand.class,
                 AppCommands.StatusCommand.class,
                 AppCommands.ArchiveCommands.class,
                 AppCommands.ConfigCommands.class
@@ -82,14 +83,46 @@ public class AppCommands {
 
     @Command(name = "delete", description = "Deletes an application", mixinStandardHelpOptions = true)
     static class DeleteCommand extends BaseAppCommand {
-        @CommandLine.Parameters(paramLabel = "<name>", description = "Application name to delete.")
-        String name;
+        @CommandLine.Option(names = {"-n", "--name"}, description = "Name of the application. If omitted, the current application is used.")
+        String appName;
+
+        @CommandLine.Option(names = {"-f", "--force"}, description = "Cancel any running builds and deploy")
+        boolean force;
 
         @Override
         public void run() {
             String activeApp = cliContext.getActiveApp();
-            applicationService.delete(name);
+            String name = appName;
+            if (name == null) {
+                name = validateActiveApp();
+            }
+            System.out.println("Deleting application '" + name + "'...");
+            applicationService.delete(name, force);
             System.out.println("Application '" + name + "' deleted");
+            if (name.equals(activeApp)) {
+                System.out.println("Since this was the currently active application, the active application has been cleared");
+            }
+        }
+    }
+
+    @Command(name = "stop", description = "Stops an application", mixinStandardHelpOptions = true)
+    static class StopCommand extends BaseAppCommand {
+        @CommandLine.Option(names = {"-n", "--name"}, description = "Name of the application. If omitted, the current application is used.")
+        String appName;
+
+        @CommandLine.Option(names = {"-f", "--force"}, description = "Cancel any running builds and deploy")
+        boolean force;
+
+        @Override
+        public void run() {
+            String activeApp = cliContext.getActiveApp();
+            String name = appName;
+            if (name == null) {
+                name = validateActiveApp();
+            }
+            System.out.println("Stopping application '" + name + "'...");
+            applicationService.stop(name);
+            System.out.println("Application '" + name + "' stopped");
             if (name.equals(activeApp)) {
                 System.out.println("Since this was the currently active application, the active application has been cleared");
             }

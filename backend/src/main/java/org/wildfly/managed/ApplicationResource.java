@@ -72,10 +72,30 @@ public class ApplicationResource {
     @ResponseStatus(204) // NO_CONTENT
     @DELETE
     @Path("/{appName}")
-    @Transactional
-    public void delete(String appName) {
+    public void delete(String appName, @QueryParam("force") Boolean force) {
+        boolean forceDelete = force == null ? false : force;
         try {
+            applicationRepo.findByName(appName);
+            AppState state = openshiftFacade.getStatus(appName);
+            if (!forceDelete && (state.getDeploymentState() != AppState.DeploymentState.NOT_DEPLOYED || state.getBuildState() == AppState.BuildState.RUNNING)) {
+                throw new ServerException(Response.Status.CONFLICT, "Can't delete a running application, or one in the process of being built. Stop it or force delete");
+            }
             applicationRepo.delete(appName);
+            openshiftFacade.delete(appName);
+        } catch (RuntimeException e) {
+            ExceptionUnwrapper
+                    .create(ServerException.class, () -> (ServerException) e)
+                    .throwServerException(e);
+        }
+    }
+
+    @ResponseStatus(204) // NO_CONTENT
+    @PUT
+    @Path("/{appName}/stop")
+    public void stop(String appName) {
+        try {
+            applicationRepo.findByName(appName);
+            openshiftFacade.stop(appName);
         } catch (RuntimeException e) {
             ExceptionUnwrapper
                     .create(ServerException.class, () -> (ServerException) e)

@@ -54,8 +54,12 @@ public class ApplicationRepo implements PanacheRepository<Application> {
     @Transactional
     public void delete(String name) {
         // For validation, will throw an error if not found
-        findByName(name);
+        Application app = findByName(name);
 
+        for (AppArchive archive : app.appArchives) {
+            archive.application = null;
+            archive.delete();
+        }
         delete("name", name);
     }
 

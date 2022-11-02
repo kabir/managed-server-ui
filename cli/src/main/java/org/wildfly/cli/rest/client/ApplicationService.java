@@ -3,6 +3,7 @@ package org.wildfly.cli.rest.client;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.jboss.resteasy.reactive.MultipartForm;
+import org.jboss.resteasy.reactive.ResponseStatus;
 import org.wildfly.managed.common.model.AppArchive;
 import org.wildfly.managed.common.model.Application;
 import org.wildfly.managed.common.value.AppState;
@@ -35,12 +36,16 @@ public interface ApplicationService {
 
     @DELETE
     @Path("/{name}")
-    void delete(String name);
+    void delete(String name, @QueryParam("force") Boolean force);
 
     @POST
     @Path("/{name}/deploy")
     void deploy(String name, @QueryParam("force") Boolean force, @QueryParam("refresh") Boolean refresh);
 
+    @ResponseStatus(204) // NO_CONTENT
+    @PUT
+    @Path("/{appName}/stop")
+    void stop(String appName);
 
     @GET
     @Path("/{appName}/archive")
