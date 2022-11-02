@@ -225,5 +225,4 @@ public class ApplicationRepo implements PanacheRepository<Application> {
                         .and("name", name)).firstResult();
         return appArchive;
     }
-
 }

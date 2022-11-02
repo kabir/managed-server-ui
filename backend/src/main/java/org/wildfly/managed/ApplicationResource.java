@@ -194,9 +194,10 @@ public class ApplicationResource {
     @ResponseStatus(202) // ACCEPTED
     @POST
     @Path("/{appName}/deploy")
-    public void deploy(String appName) {
+     public void deploy(String appName, @QueryParam("force") Boolean force) {
         try {
-            openshiftFacade.deploy(appName);
+            boolean forceBuild = force == null ? false : force;
+            openshiftFacade.deploy(appName, forceBuild);
         } catch (RuntimeException e) {
             ExceptionUnwrapper
                     .create(ServerException.class, () -> (ServerException) e)

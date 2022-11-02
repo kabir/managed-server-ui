@@ -48,9 +48,9 @@ public class OpenshiftFacade {
     UiPaths uiPaths;
 
 
-    public void deploy(String appName) {
+    public String deploy(String appName, boolean force) {
 
-        runScript(appName, CREATE_APPLICATION_SCRIPT, appName, "");
+        runScript(CREATE_APPLICATION_SCRIPT, appName, "");
 
         List<AppArchive> archives = applicationRepo.listArchivesForApp(appName);
         if (archives.size() == 0) {
@@ -59,7 +59,15 @@ public class OpenshiftFacade {
 
         outputConfigFilesToAppDirectory(appName);
 
-        // TODO - check we're not already running a build. We'll have to check all the builds
+        if (hasRunningBuilds(appName)) {
+            if (!force) {
+                throw new ServerException(Response.Status.CONFLICT, "Build is currently running for the application. Either cancel the build or force deploy");
+            } else {
+                // It would be nice to cancel the running builds here but I don't see how
+            }
+        }
+
+        deleteAllBuilds(appName);
 
         Path appDir = uiPaths.getApplicationDir(appName);
         File tarBall = Packaging.packageFile(appDir, appDir);
@@ -84,7 +92,7 @@ public class OpenshiftFacade {
                 // Won't happen since we swallow it in the deleteIfExists call
             }
         }
-        System.out.println("Started build " + build.getFullResourceName());
+        return build.getMetadata().getName();
     }
 
     private void outputConfigFilesToAppDirectory(String appName) {
@@ -129,7 +137,7 @@ public class OpenshiftFacade {
         }
     }
 
-    private void runScript(String appName, String script, String... arguments) {
+    private void runScript(String script, String... arguments) {
         java.nio.file.Path scriptDir = uiPaths.getScriptsDir();
         java.nio.file.Path scriptPath =
                 uiPaths.getScriptsDir().resolve(script).toAbsolutePath();
@@ -189,6 +197,7 @@ public class OpenshiftFacade {
     }
 
     private AppState.BuildState getBuildState(String appName) {
+        Application app = applicationRepo.findByName(appName);
         BuildList buildList = openShiftClient.builds().withLabel("app", appName).list();
 
         // TODO don't include old builds
@@ -211,5 +220,22 @@ public class OpenshiftFacade {
 
         // TODO figure out how to determine the state of each build from their BuildStatus
         return AppState.BuildState.COMPLETED;
+    }
+
+    private boolean hasRunningBuilds(String appName) {
+        for (Build build : openShiftClient.builds().withLabel("app", appName).list().getItems()) {
+            BuildStatus status = build.getStatus();
+            if (status.getStartTimestamp() == null) {
+                return true;
+            }
+            if (status.getStartTimestamp() != null && status.getCompletionTimestamp() == null) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void deleteAllBuilds(String appName) {
+        openShiftClient.builds().withLabel("app", appName).delete();
     }
 }

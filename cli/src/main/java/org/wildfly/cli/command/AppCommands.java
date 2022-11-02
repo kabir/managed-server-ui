@@ -168,11 +168,16 @@ public class AppCommands {
 
     @Command(name = "deploy", description = "Deploy the application", mixinStandardHelpOptions = true)
     static class DeployCommand extends BaseAppCommand {
+
+        @CommandLine.Option(names = {"-f", "--force"}, description = "Cancel any running builds and deploy")
+        boolean force;
+
         @Override
         public void run() {
             String activeApp = validateActiveApp();
-
-            applicationService.deploy(activeApp);
+            System.out.println("Deploying application...");
+            applicationService.deploy(activeApp, force);
+            System.out.println("Application deployment registered. Monitor the status with 'app status'");
         }
     }
 
