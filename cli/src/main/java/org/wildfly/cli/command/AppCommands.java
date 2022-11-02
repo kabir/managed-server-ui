@@ -172,11 +172,14 @@ public class AppCommands {
         @CommandLine.Option(names = {"-f", "--force"}, description = "Cancel any running builds and deploy")
         boolean force;
 
+        @CommandLine.Option(names = {"-r", "--refresh"}, description = "Refreshes the archives in a running application.")
+        boolean refresh;
+
         @Override
         public void run() {
             String activeApp = validateActiveApp();
             System.out.println("Deploying application...");
-            applicationService.deploy(activeApp, force);
+            applicationService.deploy(activeApp, force, refresh);
             System.out.println("Application deployment registered. Monitor the status with 'app status'");
         }
     }

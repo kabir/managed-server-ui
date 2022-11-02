@@ -48,7 +48,7 @@ public class OpenshiftFacade {
     UiPaths uiPaths;
 
 
-    public String deploy(String appName, boolean force) {
+    public String deploy(String appName, boolean force, boolean refresh) {
 
         runScript(CREATE_APPLICATION_SCRIPT, appName, "");
 
@@ -57,25 +57,36 @@ public class OpenshiftFacade {
             throw new ServerException(Response.Status.CONFLICT, "Cannot deploy application since it has no archives added.");
         }
 
-        outputConfigFilesToAppDirectory(appName);
+        if (refresh) {
+            AppState.DeploymentState deploymentState = getDeploymentStatus(appName);
+            if (deploymentState != AppState.DeploymentState.RUNNING) {
+                throw new ServerException(Response.Status.CONFLICT, "Can only refresh a running application");
+            }
+            // TODO should check the configs haven't changed and error if they have.
+        }
 
         if (hasRunningBuilds(appName)) {
             if (!force) {
-                throw new ServerException(Response.Status.CONFLICT, "Build is currently running for the application. Either cancel the build or force deploy");
+                throw new ServerException(Response.Status.CONFLICT, "The application is currently building. You can stop the build by doing a force deploy");
             } else {
-                // It would be nice to cancel the running builds here but I don't see how
+                // It would be nice to cancel the running builds here but I don't see how to just cancel.
+                // The delete we are doing later
             }
         }
 
         deleteAllBuilds(appName);
 
+        outputConfigFilesToAppDirectory(appName);
+
         Path appDir = uiPaths.getApplicationDir(appName);
         File tarBall = Packaging.packageFile(appDir, appDir);
         Build build;
         try {
+            String buildName = !refresh ? appName + "-deployment-build" : appName + "-update-build";
+
             build = openShiftClient.buildConfigs()
                     .inNamespace("kkhan1-dev")
-                    .withName(appName + "-deployment-build")
+                    .withName(buildName)
                     .instantiateBinary()
                     .fromFile(tarBall);
         } finally {

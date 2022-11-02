@@ -39,7 +39,7 @@ public interface ApplicationService {
 
     @POST
     @Path("/{name}/deploy")
-    void deploy(String name, @QueryParam("force") Boolean force);
+    void deploy(String name, @QueryParam("force") Boolean force, @QueryParam("refresh") Boolean refresh);
 
 
     @GET
