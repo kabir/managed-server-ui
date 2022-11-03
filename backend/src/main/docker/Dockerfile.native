@@ -15,11 +15,24 @@
 #
 ###
 FROM registry.access.redhat.com/ubi8/ubi-minimal:8.6
+
+USER root
+RUN microdnf install openssl gzip
+RUN curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 && \
+    chmod 700 get_helm.sh && \
+    ./get_helm.sh && \
+    curl -fsSL https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest/openshift-client-linux.tar.gz -o ./oc.tar.gz && \
+    tar -xvf ./oc.tar.gz && \
+    ls -al && \
+    cp oc /usr/local/bin/oc
+
+
 WORKDIR /work/
 RUN chown 1001 /work \
     && chmod "g+rwX" /work \
     && chown 1001:root /work
 COPY --chown=1001:root target/*-runner /work/application
+COPY --chown=1001 src/main/docker/contents/*.sh /scripts/
 
 EXPOSE 8080
 USER 1001

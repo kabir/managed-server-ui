@@ -4,6 +4,8 @@
 appName="${1}"
 helmChart="${2}"
 
+chart_dir=$(dirname "${BASH_SOURCE[0]}")
+
 helm list --filter "${appName}$" | grep -q "${appName}" && found=1 || found=0
 
 if [ ${found} -eq 0 ]; then
@@ -13,7 +15,7 @@ if [ ${found} -eq 0 ]; then
   # /Users/kabir/sourcecontrol/wildfly/managed-wildfly-chart/managed-wildfly-chart-0.1.0.tgz \
   #  --set builder.mode=populated
   helm install ${appName} \
-   /Users/kabir/sourcecontrol/wildfly/managed-wildfly-chart/managed-wildfly-chart-0.1.0.tgz
+   ${chart_dir}/managed-wildfly-chart-0.1.0.tgz
 fi
 
 
