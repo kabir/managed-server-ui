@@ -50,7 +50,9 @@ public class OpenshiftFacade {
 
     public String deploy(String appName, boolean force, boolean refresh) {
 
-        runScript(INSTALL_HELM_SCRIPT, appName, "");
+        // TODO eventually we should install the Helm chart via `helm repository add`
+
+        runScript(INSTALL_HELM_SCRIPT, appName, uiPaths.getTempHelmChartLocation);
 
         List<AppArchive> archives = applicationRepo.listArchivesForApp(appName);
         if (archives.size() == 0) {

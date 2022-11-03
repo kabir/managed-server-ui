@@ -18,8 +18,13 @@ public class UiPaths {
     @ConfigProperty(name = "managed.server.ui.backend.scriptsdir")
     String scriptsDirName;
 
+    // We should eventually install the Helm chart as a repository
+    @ConfigProperty(name = "managed.server.helm.chart.location", defaultValue = "/scripts/managed-wildfly-chart-0.1.0.tgz");
+    String tempHelmChartLocationName;
+
     private Path workingDir;
     private Path scriptsDir;
+    private Path tempHelmChartLocation;
 
     @PostConstruct
     public void init() throws Exception {
@@ -31,6 +36,11 @@ public class UiPaths {
         scriptsDir = Paths.get(scriptsDirName).toAbsolutePath();
         if (!Files.exists(scriptsDir)) {
             throw new IllegalStateException("Scripts dir does not exist: " + scriptsDir);
+        }
+
+        tempHelmChartLocation = Paths.get(tempHelmChartLocationName).toAbsolutePath();
+        if (!Files.exists(tempHelmChartLocation)) {
+            throw new IllegalStateException("Helm chart does not exist: " + tempHelmChartLocation);
         }
 
         System.out.println("-> workingDir " + workingDir);
@@ -55,5 +65,9 @@ public class UiPaths {
 
     public Path getScriptsDir() {
         return scriptsDir;
+    }
+
+    public Path getTempHelmChartLocation() {
+        return tempHelmChartLocation;
     }
 }
