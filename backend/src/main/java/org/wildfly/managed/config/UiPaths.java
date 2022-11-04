@@ -19,7 +19,7 @@ public class UiPaths {
     String scriptsDirName;
 
     // We should eventually install the Helm chart as a repository
-    @ConfigProperty(name = "managed.server.helm.chart.location", defaultValue = "/scripts/managed-wildfly-chart-0.1.0.tgz");
+    @ConfigProperty(name = "managed.server.helm.chart.location", defaultValue = "/scripts/managed-wildfly-chart-0.1.0.tgz")
     String tempHelmChartLocationName;
 
     private Path workingDir;
@@ -67,7 +67,7 @@ public class UiPaths {
         return scriptsDir;
     }
 
-    public Path getTempHelmChartLocation() {
+    public Path getTempHelmChart() {
         return tempHelmChartLocation;
     }
 }

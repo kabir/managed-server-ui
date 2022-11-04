@@ -1,0 +1,112 @@
+apiVersion: v1
+kind: List
+items:
+  - apiVersion: image.openshift.io/v1
+    kind: ImageStream
+    metadata:
+      name: managed-server-ui-backend
+      labels:
+        app: managed-server-ui-backend
+    spec:
+      lookupPolicy:
+        local: true
+      tags:
+        - from:
+            kind: DockerImage
+            name: 'quay.io/kabirk/managed-server-ui-backend-jvm'
+          generation: null
+          importPolicy: { }
+          name: latest
+          referencePolicy:
+            type: ""
+  - apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: postgres-config
+      labels:
+        app: postgres
+    data:
+      POSTGRES_DB: sampledb
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: managed-server-ui-backend
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          app: managed-server-ui-backend
+      template:
+        metadata:
+          labels:
+            app: managed-server-ui-backend
+        spec:
+          containers:
+            - name: managed-server-ui-backend
+              image: managed-server-ui-backend
+              imagePullPolicy: Always
+              ports:
+                - name: jolokia
+                  containerPort: 8778
+                  protocol: TCP
+                - name: http
+                  containerPort: 8080
+                  protocol: TCP
+                - name: ping
+                  containerPort: 8888
+                  protocol: TCP
+                - name: admin
+                  containerPort: 9990
+                  protocol: TCP
+                - name: https
+                  containerPort: 8443
+                  protocol: TCP
+              envFrom:
+                - configMapRef:
+                    name: postgres-config
+#              env:
+#                - name: POSTGRESQL_DATABASE
+#                  value: sampledb
+#                - name: POSTGRESQL_PASSWORD
+#                  value: admin
+#                - name: POSTGRESQL_USER
+#                  value: admin
+
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      name: managed-server-ui-backend
+    spec:
+      selector:
+        app: managed-server-ui-backend
+      labels:
+        app: managed-server-ui-backend
+      ipFamilies:
+        - IPv4
+      ports:
+        - protocol: TCP
+          port: 8080
+          targetPort: 8080
+      internalTrafficPolicy: Cluster
+      type: ClusterIP
+      sessionAffinity: None
+      ipFamilyPolicy: SingleStack
+
+  - kind: Route
+    apiVersion: route.openshift.io/v1
+    metadata:
+      name: managed-server-ui-backend
+      # namespace: {{ .Release.Namespace }}
+      labels:
+        app: managed-server-ui-backend
+    spec:
+      to:
+        kind: Service
+        name: managed-server-ui-backend
+        weight: 100
+      tls:
+        termination: edge
+        insecureEdgeTerminationPolicy: Redirect
+      wildcardPolicy: None
