@@ -1,7 +1,6 @@
 package org.wildfly.cli.command;
 
-import org.eclipse.microprofile.rest.client.inject.RestClient;
-import org.wildfly.cli.CliContext;
+import org.wildfly.cli.context.CliContext;
 import org.wildfly.cli.rest.client.ApplicationService;
 import org.wildfly.cli.rest.client.DeploymentDto;
 import org.wildfly.cli.util.TableOutputter;
@@ -34,8 +33,6 @@ import java.util.List;
 public class AppCommands {
 
     static abstract class BaseAppCommand implements Runnable {
-        @RestClient
-        ApplicationService applicationService;
 
         @Inject
         CliContext cliContext;
@@ -48,6 +45,10 @@ public class AppCommands {
             }
             return activeApp;
         }
+
+        protected ApplicationService applicationService() {
+            return ApplicationService.createInstance(cliContext);
+        }
     }
 
     private static final String INDENT = "  ";
@@ -55,14 +56,14 @@ public class AppCommands {
     @Command(name = "create", description = "Creates a new application", mixinStandardHelpOptions = true)
     static class CreateCommand extends BaseAppCommand {
 
-        @CommandLine.Parameters(paramLabel = "<name>", description = "Application name. Must be unique.")
+        @CommandLine.Parameters(paramLabel = "<name>", description = "Application name. Must be unique.", index = "0")
         String name;
 
         @Override
         public void run() {
             Application application = new Application();
             application.name = name;
-            applicationService.create(application);
+            applicationService().create(application);
             cliContext.setActiveApp(name);
             System.out.println("Application " + name + " created and set as the active application.");
         }
@@ -97,7 +98,7 @@ public class AppCommands {
                 name = validateActiveApp();
             }
             System.out.println("Deleting application '" + name + "'...");
-            applicationService.delete(name, force);
+            applicationService().delete(name, force);
             System.out.println("Application '" + name + "' deleted");
             if (name.equals(activeApp)) {
                 System.out.println("Since this was the currently active application, the active application has been cleared");
@@ -121,7 +122,7 @@ public class AppCommands {
                 name = validateActiveApp();
             }
             System.out.println("Stopping application '" + name + "'...");
-            applicationService.stop(name);
+            applicationService().stop(name);
             System.out.println("Application '" + name + "' stopped");
             if (name.equals(activeApp)) {
                 System.out.println("Since this was the currently active application, the active application has been cleared");
@@ -154,7 +155,7 @@ public class AppCommands {
 
             System.out.println(name);
             // Load it to check it is there whether verbose or not
-            Application app = applicationService.get(name, false);
+            Application app = applicationService().get(name, false);
             if (!verbose) {
             } else {
                 System.out.println("");
@@ -178,7 +179,7 @@ public class AppCommands {
         @Override
         public void run() {
             cliContext.getActiveApp();
-            List<Application> applications = applicationService.list();
+            List<Application> applications = applicationService().list();
             System.out.println("Applications:");
             if (applications.size() == 0) {
                 System.out.println(INDENT + "No applications");
@@ -212,7 +213,7 @@ public class AppCommands {
         public void run() {
             String activeApp = validateActiveApp();
             System.out.println("Deploying application...");
-            applicationService.deploy(activeApp, force, refresh);
+            applicationService().deploy(activeApp, force, refresh);
             System.out.println("Application deployment registered. Monitor the status with 'app status'");
         }
     }
@@ -223,7 +224,7 @@ public class AppCommands {
         public void run() {
             String activeApp = validateActiveApp();
 
-            AppState appStatus = applicationService.status(activeApp);
+            AppState appStatus = applicationService().status(activeApp);
             // TODO fill in :-)
             System.out.println("Deployment: " + appStatus.getDeploymentState());
             System.out.println("Build: " + appStatus.getBuildState());
@@ -250,7 +251,7 @@ public class AppCommands {
             @Override
             public void run() {
                 String activeApp = validateActiveApp();
-                List<AppArchive> appArchives = applicationService.listArchives(activeApp);
+                List<AppArchive> appArchives = applicationService().listArchives(activeApp);
                 if (fromCommandLine) {
                     System.out.println("Archives in " + activeApp + ":");
                 } else {
@@ -309,15 +310,13 @@ public class AppCommands {
                     System.out.println("Adding " + fileName + " to application " + activeApp + "");
 
                     System.out.println("Uploading " + activeApp);
-                    applicationService.addArchive(activeApp, dto);
+                    applicationService().addArchive(activeApp, dto);
                 }
             }
         }
 
         @Command(name = "replace", description = "Replaces one or more archives in the application.", mixinStandardHelpOptions = true)
         static class ReplaceCommand extends BaseAppCommand {
-            @RestClient
-            ApplicationService applicationService;
 
             @CommandLine.Parameters(paramLabel = "<paths>", description = "Comma-separated paths to files to replace.", split = ",")
             List<java.nio.file.Path> paths;
@@ -338,7 +337,7 @@ public class AppCommands {
                     DeploymentDto dto = new DeploymentDto(path);
                     String fileName = path.getFileName().toString();
                     System.out.println("Uploading " + fileName + " to application " + activeApp + " for replacement");
-                    applicationService.replaceArchive(activeApp, fileName, dto);
+                    applicationService().replaceArchive(activeApp, fileName, dto);
                 }
             }
         }
@@ -354,7 +353,7 @@ public class AppCommands {
                 String activeApp = validateActiveApp();
                 for (String name : names) {
                     System.out.println("Deleting " + name + " from " + activeApp);
-                    applicationService.deleteArchive(activeApp, name);
+                    applicationService().deleteArchive(activeApp, name);
                 }
             }
         }
@@ -396,7 +395,7 @@ public class AppCommands {
             public void run() {
                 String activeApp = validateActiveApp();
                 validateType();
-                String config = applicationService.getConfigFileContents(activeApp, type);
+                String config = applicationService().getConfigFileContents(activeApp, type);
                 System.out.println(config);
             }
         }
@@ -410,7 +409,7 @@ public class AppCommands {
             public void run() {
                 String activeApp = validateActiveApp();
                 validateType();
-                applicationService.setConfigFileContents(activeApp, type, new DeploymentDto(path));
+                applicationService().setConfigFileContents(activeApp, type, new DeploymentDto(path));
             }
         }
 
@@ -422,7 +421,7 @@ public class AppCommands {
             public void run() {
                 String activeApp = validateActiveApp();
                 validateType();
-                applicationService.deleteConfigFileContents(activeApp, type);
+                applicationService().deleteConfigFileContents(activeApp, type);
             }
         }
 

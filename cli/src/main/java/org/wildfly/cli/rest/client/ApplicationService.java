@@ -1,9 +1,10 @@
 package org.wildfly.cli.rest.client;
 
+import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
-import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.jboss.resteasy.reactive.MultipartForm;
 import org.jboss.resteasy.reactive.ResponseStatus;
+import org.wildfly.cli.context.CliContext;
 import org.wildfly.managed.common.model.AppArchive;
 import org.wildfly.managed.common.model.Application;
 import org.wildfly.managed.common.value.AppState;
@@ -17,12 +18,14 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.net.URI;
 import java.util.List;
 
 @Path("/app")
-@RegisterRestClient(configKey = "managed-server-ui-backend")
 @RegisterProvider(ClientHeaderErrorReader.class)
-@ExitingOnError
 public interface ApplicationService {
     @GET
     List<Application> list();
@@ -84,5 +87,37 @@ public interface ApplicationService {
     @GET
     @Path("/{appName}/status")
     AppState status(String appName);
+
+    static ApplicationService createInstance(CliContext cliContext) {
+        URI uri = cliContext.getServerBackEndUri();
+        if (uri == null) {
+            if (!cliContext.isInitialised()) {
+                return null;
+            }
+            System.err.println("No server set. Set the server using the 'server' command");
+            System.exit(1);
+        }
+        ApplicationService service = RestClientBuilder.newBuilder()
+                .baseUri(uri)
+                .build(ApplicationService.class);
+
+        Object o = java.lang.reflect.Proxy.newProxyInstance(ApplicationService.class.getClassLoader(), new Class[]{ApplicationService.class}, new InvocationHandler() {
+            @Override
+            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                try {
+                    return method.invoke(service, args);
+                } catch (InvocationTargetException e) {
+                    if (e.getCause() instanceof ClientHeaderErrorException) {
+                        System.err.println(e.getCause().getMessage());
+                        System.exit(1);
+                    }
+                    throw e.getCause();
+                } catch (Throwable throwable) {
+                    throw throwable;
+                }
+            }
+        });
+        return (ApplicationService) o;
+    }
 
 }

@@ -1,30 +1,27 @@
-package org.wildfly.cli;
+package org.wildfly.cli.context;
 
-import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.wildfly.cli.rest.client.ApplicationService;
 import org.wildfly.managed.common.model.Application;
 
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.Dependent;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 
 @Dependent
 public class CliContext {
 
-    @RestClient
-    ApplicationService applicationService;
-
     private Path contextDir;
     private Map<ContextKey, String> values = new HashMap<>();
 
-
-    String activeApp;
+    private boolean initialised = false;
 
     @PostConstruct
     public void init() throws Exception {
@@ -47,17 +44,29 @@ public class CliContext {
         String activeApp = getActiveApp();
         if (activeApp != null) {
             boolean foundActiveApp = false;
-            for (Application application : applicationService.list()) {
-                if (application.name.equals(activeApp)) {
-                    foundActiveApp = true;
-                    break;
+            if (getServerBackEndUri() == null) {
+                System.out.println("Not connected to server. Clearing active application " + activeApp);
+                setActiveApp(null);
+            } else {
+                ApplicationService applicationService = ApplicationService.createInstance(this);
+                for (Application application : applicationService.list()) {
+                    if (application.name.equals(activeApp)) {
+                        foundActiveApp = true;
+                        break;
+                    }
+                }
+                if (!foundActiveApp) {
+                    System.out.println("Clearing active application. It was set to '" + activeApp + "', which no longer exists.");
+                    setActiveApp(null);
                 }
             }
-            if (!foundActiveApp) {
-                System.out.println("Clearing active application. It was set to '" + activeApp + "', which no longer exists.");
-                setActiveApp(null);
-            }
         }
+
+        initialised = true;
+    }
+
+    public boolean isInitialised() {
+        return initialised;
     }
 
     public String getActiveApp() {
@@ -66,6 +75,36 @@ public class CliContext {
 
     public void setActiveApp(String app) {
         setValue(ContextKey.ACTIVE_APP, app);
+    }
+
+    public URI getServerBackEndUri() {
+        return fromString(values.get(ContextKey.SERVER_BACKEND_URI), s -> URI.create(s));
+    }
+
+    public void setServerBackEndUri(String s) {
+        if (s != null) {
+            try {
+                URI.create(s);
+            } catch (Exception e) {
+                System.err.println(s + " is not a valid uri");
+                System.exit(1);
+            }
+        }
+        setValue(ContextKey.SERVER_BACKEND_URI, s);
+    }
+
+    private <T> T fromString(String value, Function<String, T> converter) {
+        if (value == null) {
+            return null;
+        }
+        return converter.apply(value);
+    }
+
+    private <T> String toString(T value, Function<T, String> converter) {
+        if (value == null) {
+            return null;
+        }
+        return converter.apply(value);
     }
 
 
@@ -84,14 +123,14 @@ public class CliContext {
     }
 
     private enum ContextKey {
-        ACTIVE_APP("active-app");
+        ACTIVE_APP("active-app"),
+        SERVER_BACKEND_URI("server-backend-uri");
 
         private final String fileName;
 
         ContextKey(String fileName) {
             this.fileName = fileName;
         }
-
     }
 
 }
