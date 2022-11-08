@@ -8,6 +8,8 @@ import io.fabric8.openshift.api.model.BuildStatus;
 import io.fabric8.openshift.api.model.Route;
 import io.fabric8.openshift.api.model.RouteList;
 import io.fabric8.openshift.client.OpenShiftClient;
+
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.wildfly.managed.ServerException;
 import org.wildfly.managed.common.model.AppArchive;
 import org.wildfly.managed.common.model.Application;
@@ -16,6 +18,7 @@ import org.wildfly.managed.config.UiPaths;
 import org.wildfly.managed.repo.ApplicationConfigs;
 import org.wildfly.managed.repo.ApplicationRepo;
 
+import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.ws.rs.core.Response;
@@ -28,6 +31,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import static org.wildfly.managed.common.util.Constants.SERVER_CONFIG_XML;
 import static org.wildfly.managed.common.util.Constants.SERVER_INIT_CLI;
@@ -38,6 +42,8 @@ public class OpenshiftFacade {
     private static final String INSTALL_HELM_SCRIPT = "install-helm.sh";
     private static final String UNINSTALL_HELM_SCRIPT = "uninstall-helm.sh";
 
+    private static final String OPENSHIFT_LOGIN = "openshift-login.sh";
+
     @Inject
     ApplicationRepo applicationRepo;
 
@@ -47,6 +53,25 @@ public class OpenshiftFacade {
     @Inject
     UiPaths uiPaths;
 
+    @ConfigProperty(name = "managed.server.openshift.do.login", defaultValue = "false")
+    boolean loginToOpenshift;
+
+    @ConfigProperty(name = "managed.server.openshift.token")
+    Optional<String> openshiftToken;
+
+    @ConfigProperty(name = "managed.server.openshift.token")
+    Optional<String> openshiftServer;
+
+
+    @PostConstruct
+    public void ensureLoggedIn() {
+        if (loginToOpenshift) {
+            String server = openshiftServer.orElseThrow();
+            String token = openshiftToken.orElseThrow();
+            runScript(OPENSHIFT_LOGIN, server, token);
+        }
+        // TODO do we need to log in periodically?
+    }
 
     public String deploy(String appName, boolean force, boolean refresh) {
 
