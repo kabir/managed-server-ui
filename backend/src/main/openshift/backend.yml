@@ -19,16 +19,6 @@ items:
           name: latest
           referencePolicy:
             type: ""
-  - apiVersion: v1
-    kind: ConfigMap
-    metadata:
-      name: postgres-config
-      labels:
-        app: postgres
-    data:
-      POSTGRES_DB: sampledb
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin
   - apiVersion: apps/v1
     kind: Deployment
     metadata:
@@ -64,18 +54,19 @@ items:
                   containerPort: 8443
                   protocol: TCP
               envFrom:
-                - configMapRef:
-                    name: postgres-config
+                - prefix: postgresql-secret-
+                  secretRef:
+                    name: postgresql
               env:
                 - name: QUARKUS_DATASOURCE_JDBC_URL
-                  value: jdbc:postgresql://${POSTGRESQL_SERVICE_HOST}:5432/${POSTGRES_DB}
+                  value: jdbc:postgresql://${POSTGRESQL_SERVICE_HOST}:${POSTGRESQL_SERVICE_PORT_POSTGRESQL}/${postgresql-secret-database-name}
                 - name: QUARKUS_DATASOURCE_USERNAME
-                  value: ${POSTGRES_USER}
+                  value: ${postgresql-secret-database-user}
                 - name: QUARKUS_DATASOURCE_PASSWORD
-                  value: ${POSTGRES_PASSWORD}
+                  value: ${postgresql-secret-database-password}
                   # Eventually this should be a persistent volume mount
                 - name: MANAGED_SERVER_UI_BACKEND_WORKDIR
-                  value: /tmp/managed-server
+                  value: "/tmp/managed-server"
 
   - apiVersion: v1
     kind: Service
