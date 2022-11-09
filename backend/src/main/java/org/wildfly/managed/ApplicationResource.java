@@ -78,7 +78,7 @@ public class ApplicationResource {
             applicationRepo.findByName(appName);
             AppState state = openshiftFacade.getStatus(appName);
             if (!forceDelete && (state.getDeploymentState() != AppState.DeploymentState.NOT_DEPLOYED || state.getBuildState() == AppState.BuildState.RUNNING)) {
-                throw new ServerException(Response.Status.CONFLICT, "Can't delete a running application, or one in the process of being built. Stop it or force delete");
+                throw new ServerException(Response.Status.CONFLICT, "Can't delete a running application, or one in the process of being built. Stop it first, or force delete.");
             }
             applicationRepo.delete(appName);
             openshiftFacade.delete(appName);
