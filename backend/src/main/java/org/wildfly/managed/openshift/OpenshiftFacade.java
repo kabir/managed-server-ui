@@ -59,7 +59,7 @@ public class OpenshiftFacade {
     @ConfigProperty(name = "managed.server.openshift.token")
     Optional<String> openshiftToken;
 
-    @ConfigProperty(name = "managed.server.openshift.token")
+    @ConfigProperty(name = "managed.server.openshift.server")
     Optional<String> openshiftServer;
 
 
