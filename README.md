@@ -121,13 +121,11 @@ Then do `oc apply -f backend/src/main/openshift/backend.yml` and set the require
 ## CLI command examples
 
 To run the CLI, go into the `cli/` directory of the project and run `java -jar target/quarkus-app/quarkus-run.jar`.
-Once things are more ready this will be packaged as a native application, and we'll get rid of all the extra output
-coming from Quarkus's CLI mode.
+Once things are more ready this will be packaged as a native application.
 
-The plain command above will present you with the help (extra Quarkus output trimmed)
+The plain command above will present you with the help:
 ```shell
 % java -jar target/quarkus-app/quarkus-run.jar           
--- SNIP --
 Missing required subcommand
 Usage: ms-cli [-hV] [COMMAND]
   -h, --help      Show this help message and exit.
@@ -135,12 +133,10 @@ Usage: ms-cli [-hV] [COMMAND]
 Commands:
   app     Application commands
   server  Operations for the backend server used to manage applications
--- SNIP --
 ```
 To get more information about a command you can specify that, e.g.:
 ```shell
 % java -jar target/quarkus-app/quarkus-run.jar app
--- SNIP --
 Missing required subcommand
 Usage: ms-cli app [-hV] [COMMAND]
 Application commands
@@ -157,7 +153,6 @@ Commands:
   status   Gets the application status
   archive  Application archive commands
   config   Application config commands
--- SNIP --
 ```
 
 Now let's look at how we can connect to the backend, and deploy an application.
