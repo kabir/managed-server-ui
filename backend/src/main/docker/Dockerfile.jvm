@@ -86,7 +86,6 @@ RUN curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/s
     ./get_helm.sh && \
     curl -fsSL https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/latest/openshift-client-linux.tar.gz -o ./oc.tar.gz && \
     tar -xvf ./oc.tar.gz && \
-    ls -al && \
     cp oc /usr/local/bin/oc
 
 # We make four distinct layers so if there are application changes the library layers can be re-used
@@ -103,4 +102,7 @@ USER 185
 ENV AB_JOLOKIA_OFF=""
 ENV JAVA_OPTS="-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
 ENV JAVA_APP_JAR="/deployments/quarkus-run.jar"
+
+# Override the entry point from the 'FROM' image to be able to log in to oc before running the Java app
+CMD ["/scripts/start-backend.sh"]
 
