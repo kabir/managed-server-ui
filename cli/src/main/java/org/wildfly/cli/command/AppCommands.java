@@ -32,26 +32,17 @@ import java.util.List;
         })
 public class AppCommands {
 
+    private static final String INDENT = "  ";
+
     static abstract class BaseAppCommand implements Runnable {
 
         @Inject
         CliContext cliContext;
 
-        protected String validateActiveApp() {
-            String activeApp = cliContext.getActiveApp();
-            if (activeApp == null) {
-                System.err.println("No active application is set. Cannot continue.");
-                System.exit(1);
-            }
-            return activeApp;
-        }
-
         protected ApplicationService applicationService() {
             return ApplicationService.createInstance(cliContext);
         }
     }
-
-    private static final String INDENT = "  ";
 
     @Command(name = "create", description = "Creates a new application", mixinStandardHelpOptions = true)
     static class CreateCommand extends BaseAppCommand {
@@ -92,15 +83,11 @@ public class AppCommands {
 
         @Override
         public void run() {
-            String activeApp = cliContext.getActiveApp();
-            String name = appName;
-            if (name == null) {
-                name = validateActiveApp();
-            }
-            System.out.println("Deleting application '" + name + "'...");
-            applicationService().delete(name, force);
-            System.out.println("Application '" + name + "' deleted");
-            if (name.equals(activeApp)) {
+            ApplicationSelector appSelector = ApplicationSelector.create(cliContext, appName);
+            System.out.println("Deleting application '" + appSelector.name + "'...");
+            applicationService().delete(appSelector.name, force);
+            System.out.println("Application '" + appSelector.name + "' deleted");
+            if (appSelector.active) {
                 System.out.println("Since this was the currently active application, the active application has been cleared");
             }
         }
@@ -111,22 +98,12 @@ public class AppCommands {
         @CommandLine.Option(names = {"-n", "--name"}, description = "Name of the application. If omitted, the current application is used.")
         String appName;
 
-        @CommandLine.Option(names = {"-f", "--force"}, description = "Cancel any running builds and deploy")
-        boolean force;
-
         @Override
         public void run() {
-            String activeApp = cliContext.getActiveApp();
-            String name = appName;
-            if (name == null) {
-                name = validateActiveApp();
-            }
-            System.out.println("Stopping application '" + name + "'...");
-            applicationService().stop(name);
-            System.out.println("Application '" + name + "' stopped");
-            if (name.equals(activeApp)) {
-                System.out.println("Since this was the currently active application, the active application has been cleared");
-            }
+            ApplicationSelector appSelector = ApplicationSelector.create(cliContext, appName);
+            System.out.println("Stopping application '" + appSelector.name + "'...");
+            applicationService().stop(appSelector.name);
+            System.out.println("Application '" + appSelector.name + "' stopped");
         }
     }
 
@@ -148,23 +125,17 @@ public class AppCommands {
         @Override
         public void run() {
 
-            String name;
-            if (appName == null) {
-                name = validateActiveApp();
-            } else {
-                name = appName;
-            }
-
+            ApplicationSelector appSelector = ApplicationSelector.create(cliContext, appName);
 
             if (!verbose) {
-                System.out.println(name);
+                System.out.println(appSelector.name);
             } else {
-                System.out.println("Name: " + name);
+                System.out.println("Name: " + appSelector.name);
             }
 
             // Load it to check it is there whether verbose or not.
             // We do this after printing the name so people can see the active application
-            Application app = applicationService().get(name, false);
+            Application app = applicationService().get(appSelector.name, false);
 
             if (verbose) {
                 System.out.println("");
@@ -182,13 +153,14 @@ public class AppCommands {
                 System.out.println("");
                 System.out.println("Routes");
                 System.out.println("------");
-                List<String> routes = applicationService().routes(name);
+                List<String> routes = applicationService().routes(appSelector.name);
                 for (String route : routes) {
                     System.out.println(route);
                 }
 
                 System.out.println("");
                 archiveListCommand.fromCommandLine = false;
+                archiveListCommand.appName = appName;
                 archiveListCommand.run();
             }
         }
@@ -226,6 +198,9 @@ public class AppCommands {
     @Command(name = "deploy", description = "Deploy the application", mixinStandardHelpOptions = true)
     static class DeployCommand extends BaseAppCommand {
 
+        @CommandLine.Option(names = {"-n", "--name"}, description = "Name of the application. If omitted, the current application is used.")
+        String appName;
+
         @CommandLine.Option(names = {"-f", "--force"}, description = "Cancel any running builds and deploy")
         boolean force;
 
@@ -234,20 +209,22 @@ public class AppCommands {
 
         @Override
         public void run() {
-            String activeApp = validateActiveApp();
+            ApplicationSelector appSelector = ApplicationSelector.create(cliContext, appName);
             System.out.println("Deploying application...");
-            applicationService().deploy(activeApp, force, refresh);
+            applicationService().deploy(appSelector.name, force, refresh);
             System.out.println("Application deployment registered. Monitor the status with 'app status'");
         }
     }
 
     @Command(name = "status", description = "Gets the application status", mixinStandardHelpOptions = true)
     static class StatusCommand extends BaseAppCommand {
+        @CommandLine.Option(names = {"-n", "--name"}, description = "Name of the application. If omitted, the current application is used.")
+        String appName;
+
         @Override
         public void run() {
-            String activeApp = validateActiveApp();
-
-            AppState appStatus = applicationService().status(activeApp);
+            ApplicationSelector appSelector = ApplicationSelector.create(cliContext, appName);
+            AppState appStatus = applicationService().status(appSelector.name);
             System.out.println("Deployment: " + appStatus.getDeploymentState());
             System.out.println("Build: " + appStatus.getBuildState());
         }
@@ -268,14 +245,17 @@ public class AppCommands {
 
         @Command(name = "list", description = "List archives in the application.", mixinStandardHelpOptions = true)
         static class ListCommand extends BaseAppCommand {
+            @CommandLine.Option(names = {"-n", "--name"}, description = "Name of the application. If omitted, the current application is used.")
+            String appName;
+
             public boolean fromCommandLine = true;
 
             @Override
             public void run() {
-                String activeApp = validateActiveApp();
-                List<AppArchive> appArchives = applicationService().listArchives(activeApp);
+                ApplicationSelector appSelector = ApplicationSelector.create(cliContext, appName);
+                List<AppArchive> appArchives = applicationService().listArchives(appSelector.name);
                 if (fromCommandLine) {
-                    System.out.println("Archives in " + activeApp + ":");
+                    System.out.println("Archives in " + appSelector.name + ":");
                 } else {
                     System.out.println("Archives:");
                 }
@@ -306,12 +286,15 @@ public class AppCommands {
 
         @Command(name = "add", description = "Add one or more archives to the application.", mixinStandardHelpOptions = true)
         static class AddCommand extends BaseAppCommand {
+            @CommandLine.Option(names = {"-n", "--name"}, description = "Name of the application. If omitted, the current application is used.")
+            String appName;
+
             @CommandLine.Parameters(paramLabel = "<paths>", description = "Comma-separated paths to files to add.", split = ",")
             List<java.nio.file.Path> paths;
 
             @Override
             public void run() {
-                String activeApp = validateActiveApp();
+                ApplicationSelector appSelector = ApplicationSelector.create(cliContext, appName);
 
                 if (paths == null || paths.size() == 0) {
                     System.err.println("Need top specify at least one path to an archive");
@@ -329,10 +312,10 @@ public class AppCommands {
                     }
                     DeploymentDto dto = new DeploymentDto(path);
                     String fileName = path.getFileName().toString();
-                    System.out.println("Adding " + fileName + " to application " + activeApp + "");
+                    System.out.println("Adding " + fileName + " to application " + appSelector.name + "");
 
                     System.out.println("Uploading " + fileName + "...");
-                    applicationService().addArchive(activeApp, dto);
+                    applicationService().addArchive(appSelector.name, dto);
                     System.out.println("Upload done");
                 }
             }
@@ -341,12 +324,15 @@ public class AppCommands {
         @Command(name = "replace", description = "Replaces one or more archives in the application.", mixinStandardHelpOptions = true)
         static class ReplaceCommand extends BaseAppCommand {
 
+            @CommandLine.Option(names = {"-n", "--name"}, description = "Name of the application. If omitted, the current application is used.")
+            String appName;
+
             @CommandLine.Parameters(paramLabel = "<paths>", description = "Comma-separated paths to files to replace.", split = ",")
             List<java.nio.file.Path> paths;
 
             @Override
             public void run() {
-                String activeApp = validateActiveApp();
+                ApplicationSelector appSelector = ApplicationSelector.create(cliContext, appName);
 
                 for (java.nio.file.Path path : paths) {
                     if (!Files.exists(path)) {
@@ -359,8 +345,8 @@ public class AppCommands {
                     }
                     DeploymentDto dto = new DeploymentDto(path);
                     String fileName = path.getFileName().toString();
-                    System.out.println("Uploading " + fileName + " to application " + activeApp + " for replacement...");
-                    applicationService().replaceArchive(activeApp, fileName, dto);
+                    System.out.println("Uploading " + fileName + " to application " + appSelector.name + " for replacement...");
+                    applicationService().replaceArchive(appSelector.name, fileName, dto);
                     System.out.println("Upload done");
                 }
             }
@@ -369,15 +355,18 @@ public class AppCommands {
         @Command(name = "delete", description = "Deletes one or more archives in the application.", mixinStandardHelpOptions = true)
         static class DeleteCommand extends BaseAppCommand {
 
+            @CommandLine.Option(names = {"-n", "--name"}, description = "Name of the application. If omitted, the current application is used.")
+            String appName;
+
             @CommandLine.Parameters(paramLabel = "<names>", description = "Comma-separated names of archives to delete.", split = ",")
             List<String> names;
 
             @Override
             public void run() {
-                String activeApp = validateActiveApp();
+                ApplicationSelector appSelector = ApplicationSelector.create(cliContext, appName);
                 for (String name : names) {
-                    System.out.println("Deleting " + name + " from " + activeApp);
-                    applicationService().deleteArchive(activeApp, name);
+                    System.out.println("Deleting " + name + " from " + appSelector.name);
+                    applicationService().deleteArchive(appSelector.name, name);
                 }
             }
         }
@@ -414,39 +403,77 @@ public class AppCommands {
 
         @Command(name = "get", description = "Gets the config file contents.", mixinStandardHelpOptions = true)
         static class GetCommand extends BaseConfigCommand {
+            @CommandLine.Option(names = {"-n", "--name"}, description = "Name of the application. If omitted, the current application is used.")
+            String appName;
 
             @Override
             public void run() {
-                String activeApp = validateActiveApp();
+                ApplicationSelector appSelector = ApplicationSelector.create(cliContext, appName);
                 validateType();
-                String config = applicationService().getConfigFileContents(activeApp, type);
+                String config = applicationService().getConfigFileContents(appSelector.name, type);
                 System.out.println(config);
             }
         }
 
         @Command(name = "set", description = "Adds config file contents.", mixinStandardHelpOptions = true)
         static class SetCommand extends BaseConfigCommand {
+            @CommandLine.Option(names = {"-n", "--name"}, description = "Name of the application. If omitted, the current application is used.")
+            String appName;
+
             @CommandLine.Parameters(paramLabel = "<path>", description = "Path to file containing the contents.")
             java.nio.file.Path path;
 
             @Override
             public void run() {
-                String activeApp = validateActiveApp();
+                ApplicationSelector appSelector = ApplicationSelector.create(cliContext, appName);
                 validateType();
-                applicationService().setConfigFileContents(activeApp, type, new DeploymentDto(path));
+                applicationService().setConfigFileContents(appSelector.name, type, new DeploymentDto(path));
             }
         }
 
         @Command(name = "delete", description = "Deletes the config file.", mixinStandardHelpOptions = true)
         static class DeleteCommand extends BaseConfigCommand {
-
+            @CommandLine.Option(names = {"-n", "--name"}, description = "Name of the application. If omitted, the current application is used.")
+            String appName;
 
             @Override
             public void run() {
-                String activeApp = validateActiveApp();
+                ApplicationSelector appSelector = ApplicationSelector.create(cliContext, appName);
                 validateType();
-                applicationService().deleteConfigFileContents(activeApp, type);
+                applicationService().deleteConfigFileContents(appName, type);
             }
+        }
+
+    }
+
+    private static class ApplicationSelector {
+        private final String name;
+        private final boolean active;
+
+        public ApplicationSelector(String appToExecuteOn, boolean active) {
+
+            this.name = appToExecuteOn;
+            this.active = active;
+        }
+
+        static ApplicationSelector create(CliContext cliContext, String nameOption) {
+
+            String appToExecuteOn;
+            boolean active = false;
+
+            String activeApp = cliContext.getActiveApp();
+            if (nameOption != null) {
+                appToExecuteOn = nameOption;
+            } else {
+                if (activeApp == null) {
+                    System.err.println("No active application is set. Cannot continue.");
+                    System.exit(1);
+                }
+                appToExecuteOn = activeApp;
+                active = true;
+            }
+
+            return new ApplicationSelector(appToExecuteOn, active);
         }
 
     }
