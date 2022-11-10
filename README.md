@@ -109,8 +109,8 @@ Then we need to build the application with `mvn clean install`.
 Once built we need to build the docker image. In this case I am simply replacing the URL of the image tag to
 be your repository on Quay.io.
 ```shell
-docker build -f backend/src/main/docker/Dockerfile.jvm -t quay.io/repository/<your repo>/managed-server-ui-backend-jvm backend
-docker push quay.io/repository/<your repo>/managed-server-ui-backend-jvm
+docker build -f backend/src/main/docker/Dockerfile.jvm -t quay.io/<your repo>/managed-server-ui-backend-jvm backend
+docker push quay.io/<your repo>/managed-server-ui-backend-jvm
 ```
 
 You will need to update the `backend/src/main/openshift/backend.yml` file to point to the image you just pushed. This 
