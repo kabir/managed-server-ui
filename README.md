@@ -120,6 +120,7 @@ Then do `oc apply -f backend/src/main/openshift/backend.yml` and set the require
 
 ## CLI command examples
 
+### Deploying and undeploying application
 To run the CLI, go into the `cli/` directory of the project and run `java -jar target/quarkus-app/quarkus-run.jar`.
 Once things are more ready this will be packaged as a native application.
 
@@ -176,7 +177,7 @@ An application is just an empty wrapper around other resources, so let's add a d
 ```shell
 % java -jar target/quarkus-app/quarkus-run.jar app archive add $EXAMPLE_DIR/simple/target/ROOT.war
 Adding ROOT.war to application one
-Uploading one
+Uploading ROOT.war
 ```
 Note that I am adding a war file from the example project. In this case I am doing this because it contains the Galleon
 layers we need to provision for the server in its `META-INF/server-config.xml` file. This file is required at the moment,
@@ -185,8 +186,10 @@ with the `java -jar target/quarkus-app/quarkus-run.jar app config set xml /path/
 appears in both places, the one external to the war will take precedence. Similarly, the war also contains
 `META-INF/server-init.cli` and `META-INF/server-init.yml` which can also be externalised/overridden via the CLI.
 
-At this stage we could also add more war files to our application. However, let's skip to actually deploying our 
-application.
+At this stage we could also add more war files to our application. They are simply stored on the backend server handling
+the CLI commands. 
+
+Now, let's actually deploy our application:
 ```shell
 % java -jar target/quarkus-app/quarkus-run.jar app deploy                                                             
 Deploying application...
@@ -203,9 +206,6 @@ Build: RUNNING
 ```
 Once `Deployment: RUNNING` is reported, the user's application is accessible.
 
-
-// TODO routes
-
 We can remove the application by running the following
 
 ```shell
@@ -220,4 +220,103 @@ ERROR: Can't delete a running application, or one in the process of being built.
 We had to pass in the `-f` flag to force deletion. This would be similar to running 
 `java -jar target/quarkus-app/quarkus-run.jar app stop` followed by 
 `java -jar target/quarkus-app/quarkus-run.jar app delete` (no `-f` needed now).
+
+### Active application and --name
+A lot of the application commands work on an application. 
+
+As we saw above, when you create an application it becomes set as the active application.
+
+```shell
+% java -jar target/quarkus-app/quarkus-run.jar app create one                  
+Application one created and set as the active application.
+
+% java -jar target/quarkus-app/quarkus-run.jar app create two                  
+Application two created and set as the active application.
+```
+Let's set 'one' as the active application, and add some contents and deploy to it as we saw above:
+```shell
+% java -jar target/quarkus-app/quarkus-run.jar app use one
+Application one set as the active application.
+
+% java -jar target/quarkus-app/quarkus-run.jar app archive add $EXAMPLE_DIR/simple/target/ROOT.war
+Adding ROOT.war to application one
+Uploading ROOT.war
+
+% java -jar target/quarkus-app/quarkus-run.jar app deploy                                                             
+Deploying application...
+Application deployment registered. Monitor the status with 'app status'
+```
+The commands after `app use one` all work on application 'one' since it is the active application.
+
+However, all commands where it makes sense to specify another app allow you to do so via the `--name' flag. E.g.
+```shell
+# one is the active app so its status will be reported
+% java -jar target/quarkus-app/quarkus-run.jar app status                                                         
+Deployment: RUNNING
+Build: COMPLETED
+
+# Explicitly say we want one
+% java -jar target/quarkus-app/quarkus-run.jar app status --name one
+Deployment: RUNNING
+Build: COMPLETED
+
+# Get two's status instead
+% java -jar target/quarkus-app/quarkus-run.jar app status --name two
+Deployment: NOT_DEPLOYED
+Build: NOT_RUNNING
+```
+
+The active application can be got with `app get`
+```shell
+% java -jar target/quarkus-app/quarkus-run.jar app get              
+one
+```
+
+### More application commands
+
+We can list all the applications with an overview of their status
+```shell
+% java -jar target/quarkus-app/quarkus-run.jar app list
+Application                    Deployment      Build          
+------------------------------ --------------- ---------------
+* one                          RUNNING         COMPLETED      
+two                            NOT_DEPLOYED    NOT_RUNNING    
+```
+The output indicates that 'one' is the active application.
+
+We can get more information about the active application with `app get -v` (or another application if we also use the `--name` flag):
+```shell
+% java -jar target/quarkus-app/quarkus-run.jar app get -v           
+Name: one
+
+Status
+------
+Deployment: RUNNING
+Build: COMPLETED
+
+Configs
+-------
+XML: 
+CLI: 
+YML: 
+
+Routes
+------
+one-kkhan1-dev.apps.sandbox.x8i5.p1.openshiftapps.com
+
+Archives:
+Archive                        Has XML Has CLI Has YAML
+------------------------------ ------- ------- --------
+ROOT.war                       *       *       *       
+
+```
+
+To update an archive in an application we can use `app archive replace`:
+```shell
+% java -jar target/quarkus-app/quarkus-run.jar app archive replace $EXAMPLE_DIR/simple/target/ROOT.war
+Uploading ROOT.war to application one for replacement...
+Upload done
+```
+This will not affect the application running on OpenShift until `app deploy` is called again.
+
 
