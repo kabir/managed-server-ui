@@ -3,7 +3,7 @@ package org.wildfly.cli.command;
 import org.wildfly.cli.context.CliContext;
 import org.wildfly.cli.rest.client.ApplicationService;
 import org.wildfly.cli.rest.client.DeploymentDto;
-import org.wildfly.cli.util.TableOutputter;
+import org.wildfly.cli.util.TableRenderer;
 import org.wildfly.managed.common.model.AppArchive;
 import org.wildfly.managed.common.model.Application;
 import org.wildfly.managed.common.value.AppState;
@@ -32,7 +32,6 @@ import java.util.List;
         })
 public class AppCommands {
 
-    private static final String INDENT = "  ";
 
     static abstract class BaseAppCommand implements Runnable {
 
@@ -110,12 +109,6 @@ public class AppCommands {
     @Command(name = "get", description = "Gets information about an application", mixinStandardHelpOptions = true)
     static class GetCommand extends BaseAppCommand {
 
-        @Inject
-        ArchiveCommands.ListCommand archiveListCommand;
-
-        @Inject
-        StatusCommand statusCommand;
-
         @CommandLine.Option(names = {"-v", "--verbose"}, description = "Output detailed information")
         boolean verbose;
 
@@ -141,7 +134,8 @@ public class AppCommands {
                 System.out.println("");
                 System.out.println("Status");
                 System.out.println("------");
-                statusCommand.run();
+                AppState appStatus = applicationService().status(appSelector.name);
+                Renderers.renderAppStatus(appStatus);
 
                 System.out.println("");
                 System.out.println("Configs");
@@ -159,9 +153,9 @@ public class AppCommands {
                 }
 
                 System.out.println("");
-                archiveListCommand.fromCommandLine = false;
-                archiveListCommand.appName = appName;
-                archiveListCommand.run();
+                System.out.println("Archives:");
+                List<AppArchive> appArchives = applicationService().listArchives(appSelector.name);
+                Renderers.renderAppArchives(appArchives);
             }
         }
     }
@@ -173,10 +167,10 @@ public class AppCommands {
             cliContext.getActiveApp();
             List<Application> applications = applicationService().list();
             if (applications.size() == 0) {
-                System.out.println(INDENT + "No applications");
+                System.out.println(Renderers.INDENT + "No applications");
             } else {
                 String activeApp = cliContext.getActiveApp();
-                TableOutputter outputter = TableOutputter.builder()
+                TableRenderer outputter = TableRenderer.builder()
                         .addColumn(30, "Application")
                         .addColumn(15, "Deployment")
                         .addColumn(15, "Build")
@@ -225,8 +219,7 @@ public class AppCommands {
         public void run() {
             ApplicationSelector appSelector = ApplicationSelector.create(cliContext, appName);
             AppState appStatus = applicationService().status(appSelector.name);
-            System.out.println("Deployment: " + appStatus.getDeploymentState());
-            System.out.println("Build: " + appStatus.getBuildState());
+            Renderers.renderAppStatus(appStatus);
         }
     }
 
@@ -248,39 +241,12 @@ public class AppCommands {
             @CommandLine.Option(names = {"-n", "--name"}, description = "Name of the application. If omitted, the current application is used.")
             String appName;
 
-            public boolean fromCommandLine = true;
-
             @Override
             public void run() {
                 ApplicationSelector appSelector = ApplicationSelector.create(cliContext, appName);
                 List<AppArchive> appArchives = applicationService().listArchives(appSelector.name);
-                if (fromCommandLine) {
-                    System.out.println("Archives in " + appSelector.name + ":");
-                } else {
-                    System.out.println("Archives:");
-                }
-
-                if (appArchives.size() == 0) {
-                    System.out.println(INDENT + "None");
-                } else {
-                    TableOutputter outputter = TableOutputter.builder()
-                            .addColumn(30, "Archive")
-                            .addColumn(7, "Has XML")
-                            .addColumn(7, "Has CLI")
-                            .addColumn(8, "Has YAML")
-                            .build();
-                    for (AppArchive appArchive : appArchives) {
-                        outputter.addRow()
-                                .addColumns(
-                                        appArchive.fileName,
-                                        appArchive.serverConfigXml ? "*" : "",
-                                        appArchive.serverInitCli ? "*" : "",
-                                        appArchive.serverInitYml ? "*" : ""
-                                )
-                                .output();
-
-                    }
-                }
+                System.out.println("Archives in " + appSelector.name + ":");
+                Renderers.renderAppArchives(appArchives);
             }
         }
 

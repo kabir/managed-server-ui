@@ -4,12 +4,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class TableOutputter {
+public class TableRenderer {
     private final List<Integer> columnWidths;
     private final String space;
 
 
-    private TableOutputter(Builder builder) {
+    private TableRenderer(Builder builder) {
         this.columnWidths = builder.columnWidths;
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < builder.spacing; i++) {
@@ -116,16 +116,16 @@ public class TableOutputter {
             return this;
         }
 
-        public TableOutputter build() {
+        public TableRenderer build() {
             if (headers.size() != columnWidths.size()) {
                 throw new IllegalStateException("Either all or no columns need a header");
             }
-            return new TableOutputter(this);
+            return new TableRenderer(this);
         }
     }
 
     public static void main(String[] args) {
-        TableOutputter o = TableOutputter.builder()
+        TableRenderer o = TableRenderer.builder()
                 .addColumn(5, "Hello")
                 .addColumn(7, "Test")
                 .addColumn(3, "THree")
