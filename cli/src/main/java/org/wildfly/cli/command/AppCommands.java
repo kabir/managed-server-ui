@@ -171,12 +171,21 @@ public class AppCommands {
                 System.out.println("Status");
                 System.out.println("------");
                 statusCommand.run();
+
                 System.out.println("");
                 System.out.println("Configs");
                 System.out.println("-------");
                 System.out.println("XML: " + (app.hasServerConfigXml ? "y" : ""));
                 System.out.println("CLI: " + (app.hasServerInitCli ? "y" : ""));
                 System.out.println("YML: " + (app.hasServerInitYml ? "y" : ""));
+
+                System.out.println("");
+                System.out.println("Routes");
+                System.out.println("------");
+                List<String> routes = applicationService().routes(name);
+                for (String route : routes) {
+                    System.out.println(route);
+                }
 
                 System.out.println("");
                 archiveListCommand.fromCommandLine = false;

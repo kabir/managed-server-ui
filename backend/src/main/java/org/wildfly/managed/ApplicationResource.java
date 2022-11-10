@@ -241,6 +241,20 @@ public class ApplicationResource {
         }
     }
 
+    @GET
+    @Path("/{appName}/routes")
+    public List<String> routes(String appName) {
+        try {
+            // Check application exists
+            applicationRepo.findByName(appName);
+            return openshiftFacade.getRoutes(appName);
+        } catch (RuntimeException e) {
+            ExceptionUnwrapper
+                    .create(ServerException.class, () -> (ServerException) e)
+                    .throwServerException(e);
+            return null;
+        }
+    }
 
 
     @ServerExceptionMapper

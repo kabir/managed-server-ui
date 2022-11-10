@@ -88,6 +88,10 @@ public interface ApplicationService {
     @Path("/{appName}/status")
     AppState status(String appName);
 
+    @GET
+    @Path("/{appName}/routes")
+    List<String> routes(String appName);
+
     static ApplicationService createInstance(CliContext cliContext) {
         URI uri = cliContext.getServerBackEndUri();
         if (uri == null) {

@@ -182,18 +182,20 @@ public class OpenshiftFacade {
         AppState.DeploymentState deploymentState = getDeploymentStatus(appName);
         AppState.BuildState buildState = getBuildState(appName);
 
-
-        if (deploymentState == AppState.DeploymentState.RUNNING) {
-            RouteList routes = openShiftClient.routes().withLabel("app", appName).list();
-            List<String> appRoutes = new ArrayList<>();
-            for (Route route : routes.getItems()) {
-                // TODO get the route information
-            }
-        }
         if (buildState == AppState.BuildState.COMPLETED && deploymentState == AppState.DeploymentState.NOT_DEPLOYED) {
             buildState = AppState.BuildState.NOT_RUNNING;
         }
         return new AppState(deploymentState, buildState);
+    }
+
+    public List<String> getRoutes(String appName) {
+        RouteList routes = openShiftClient.routes().withLabel("app", appName).list();
+        List<String> appRoutes = new ArrayList<>();
+        for (Route route : routes.getItems()) {
+            appRoutes.add(route.getSpec().getHost());
+        }
+
+        return appRoutes;
     }
 
     public void delete(String appName) {
