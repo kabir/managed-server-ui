@@ -14,7 +14,7 @@ if [ -z "${MANAGED_SERVER_OPENSHIFT_TOKEN}" ]; then
   exit 1
 fi
 if [ -z "${MANAGED_SERVER_OPENSHIFT_PROJECT}" ]; then
-  echo "MANAGED_SERVER_OPENSHIFT_PROJECT should point to the server. Exiting."
+  echo "MANAGED_SERVER_OPENSHIFT_PROJECT should contain the name of the OpenShift project. Exiting."
   exit 1
 fi
 
