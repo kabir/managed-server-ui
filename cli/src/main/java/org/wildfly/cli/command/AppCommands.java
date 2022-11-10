@@ -3,6 +3,7 @@ package org.wildfly.cli.command;
 import org.wildfly.cli.context.CliContext;
 import org.wildfly.cli.rest.client.ApplicationService;
 import org.wildfly.cli.rest.client.DeploymentDto;
+import org.wildfly.cli.util.ColouredWriter;
 import org.wildfly.cli.util.TableRenderer;
 import org.wildfly.managed.common.model.AppArchive;
 import org.wildfly.managed.common.model.Application;
@@ -13,6 +14,10 @@ import picocli.CommandLine.Command;
 import javax.inject.Inject;
 import java.nio.file.Files;
 import java.util.List;
+
+import static org.wildfly.cli.util.ColouredWriter.printlnError;
+import static org.wildfly.cli.util.ColouredWriter.printlnSuccess;
+import static org.wildfly.cli.util.ColouredWriter.printlnWarning;
 
 @Command(
         name = "app",
@@ -55,7 +60,7 @@ public class AppCommands {
             application.name = name;
             applicationService().create(application);
             cliContext.setActiveApp(name);
-            System.out.println("Application " + name + " created and set as the active application.");
+            printlnSuccess("Application " + name + " created and set as the active application.");
         }
     }
 
@@ -67,7 +72,7 @@ public class AppCommands {
         @Override
         public void run() {
             cliContext.setActiveApp(name);
-            System.out.println("Application " + name + " set as the active application.");
+            printlnSuccess("Application " + name + " set as the active application.");
         }
     }
 
@@ -85,9 +90,9 @@ public class AppCommands {
             ApplicationSelector appSelector = ApplicationSelector.create(cliContext, appName);
             System.out.println("Deleting application '" + appSelector.name + "'...");
             applicationService().delete(appSelector.name, force);
-            System.out.println("Application '" + appSelector.name + "' deleted");
+            printlnSuccess("Application '" + appSelector.name + "' deleted");
             if (appSelector.active) {
-                System.out.println("Since this was the currently active application, the active application has been cleared");
+                printlnWarning("Since this was the currently active application, the active application has been cleared");
             }
         }
     }
@@ -102,7 +107,7 @@ public class AppCommands {
             ApplicationSelector appSelector = ApplicationSelector.create(cliContext, appName);
             System.out.println("Stopping application '" + appSelector.name + "'...");
             applicationService().stop(appSelector.name);
-            System.out.println("Application '" + appSelector.name + "' stopped");
+            printlnSuccess("Application '" + appSelector.name + "' stopped");
         }
     }
 
@@ -206,7 +211,7 @@ public class AppCommands {
             ApplicationSelector appSelector = ApplicationSelector.create(cliContext, appName);
             System.out.println("Deploying application...");
             applicationService().deploy(appSelector.name, force, refresh);
-            System.out.println("Application deployment registered. Monitor the status with 'app status'");
+            printlnSuccess("Application deployment registered. Monitor the status with 'app status'");
         }
     }
 
@@ -263,17 +268,17 @@ public class AppCommands {
                 ApplicationSelector appSelector = ApplicationSelector.create(cliContext, appName);
 
                 if (paths == null || paths.size() == 0) {
-                    System.err.println("Need top specify at least one path to an archive");
+                    printlnError("Need top specify at least one path to an archive");
                     System.exit(1);
                 }
 
                 for (java.nio.file.Path path : paths) {
                     if (!Files.exists(path)) {
-                        System.err.println(path + " not found");
+                        printlnError(path + " not found");
                         System.exit(1);
                     }
                     if (Files.isDirectory(path)) {
-                        System.err.println(path + " is a directory");
+                        printlnError(path + " is a directory");
                         System.exit(1);
                     }
                     DeploymentDto dto = new DeploymentDto(path);
@@ -282,7 +287,7 @@ public class AppCommands {
 
                     System.out.println("Uploading " + fileName + "...");
                     applicationService().addArchive(appSelector.name, dto);
-                    System.out.println("Upload done");
+                    printlnSuccess(fileName + " uploaded.");
                 }
             }
         }
@@ -302,18 +307,18 @@ public class AppCommands {
 
                 for (java.nio.file.Path path : paths) {
                     if (!Files.exists(path)) {
-                        System.err.println(path + " not found");
+                        printlnError(path + " not found");
                         System.exit(1);
                     }
                     if (Files.isDirectory(path)) {
-                        System.err.println(path + " is a directory");
+                        printlnError(path + " is a directory");
                         System.exit(1);
                     }
                     DeploymentDto dto = new DeploymentDto(path);
                     String fileName = path.getFileName().toString();
                     System.out.println("Uploading " + fileName + " to application " + appSelector.name + " for replacement...");
                     applicationService().replaceArchive(appSelector.name, fileName, dto);
-                    System.out.println("Upload done");
+                    printlnSuccess("Upload done");
                 }
             }
         }
@@ -331,8 +336,9 @@ public class AppCommands {
             public void run() {
                 ApplicationSelector appSelector = ApplicationSelector.create(cliContext, appName);
                 for (String name : names) {
-                    System.out.println("Deleting " + name + " from " + appSelector.name);
+                    System.out.println("Deleting " + name + " from " + appSelector.name + "...");
                     applicationService().deleteArchive(appSelector.name, name);
+                    printlnSuccess(name + " deleted.");
                 }
             }
         }
@@ -361,7 +367,7 @@ public class AppCommands {
                     case "yml":
                     return;
                     default:
-                        System.err.println("Not a valid type");
+                        printlnError("Not a valid type");
                         System.exit(1);
                 }
             }
@@ -393,7 +399,9 @@ public class AppCommands {
             public void run() {
                 ApplicationSelector appSelector = ApplicationSelector.create(cliContext, appName);
                 validateType();
+                System.out.println("Uploading " + type + "...");
                 applicationService().setConfigFileContents(appSelector.name, type, new DeploymentDto(path));
+                printlnSuccess("Content uploaded");
             }
         }
 
@@ -406,7 +414,9 @@ public class AppCommands {
             public void run() {
                 ApplicationSelector appSelector = ApplicationSelector.create(cliContext, appName);
                 validateType();
+                System.out.println("Deleting " + type + "...");
                 applicationService().deleteConfigFileContents(appName, type);
+                printlnSuccess("Content deleted");
             }
         }
 
@@ -432,7 +442,7 @@ public class AppCommands {
                 appToExecuteOn = nameOption;
             } else {
                 if (activeApp == null) {
-                    System.err.println("No active application is set. Cannot continue.");
+                    printlnError("No application is active, and no application set via --name. Cannot continue.");
                     System.exit(1);
                 }
                 appToExecuteOn = activeApp;

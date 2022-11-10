@@ -5,6 +5,7 @@ import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.jboss.resteasy.reactive.MultipartForm;
 import org.jboss.resteasy.reactive.ResponseStatus;
 import org.wildfly.cli.context.CliContext;
+import org.wildfly.cli.util.ColouredWriter;
 import org.wildfly.managed.common.model.AppArchive;
 import org.wildfly.managed.common.model.Application;
 import org.wildfly.managed.common.value.AppState;
@@ -112,7 +113,7 @@ public interface ApplicationService {
                     return method.invoke(service, args);
                 } catch (InvocationTargetException e) {
                     if (e.getCause() instanceof ClientHeaderErrorException) {
-                        System.err.println(e.getCause().getMessage());
+                        ColouredWriter.printlnError(e.getCause().getMessage());
                         System.exit(1);
                     }
                     throw e.getCause();
