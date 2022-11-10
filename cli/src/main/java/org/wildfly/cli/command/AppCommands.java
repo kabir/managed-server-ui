@@ -136,6 +136,9 @@ public class AppCommands {
         @Inject
         ArchiveCommands.ListCommand archiveListCommand;
 
+        @Inject
+        StatusCommand statusCommand;
+
         @CommandLine.Option(names = {"-v", "--verbose"}, description = "Output detailed information")
         boolean verbose;
 
@@ -153,14 +156,22 @@ public class AppCommands {
             }
 
 
-            System.out.println(name);
-            // Load it to check it is there whether verbose or not
-            Application app = applicationService().get(name, false);
             if (!verbose) {
+                System.out.println(name);
             } else {
+                System.out.println("Name: " + name);
+            }
+
+            // Load it to check it is there whether verbose or not.
+            // We do this after printing the name so people can see the active application
+            Application app = applicationService().get(name, false);
+
+            if (verbose) {
                 System.out.println("");
-//                System.out.println("Status: " + app.state);
-//                System.out.println("");
+                System.out.println("Status");
+                System.out.println("------");
+                statusCommand.run();
+                System.out.println("");
                 System.out.println("Configs");
                 System.out.println("-------");
                 System.out.println("XML: " + (app.hasServerConfigXml ? "y" : ""));
@@ -180,20 +191,23 @@ public class AppCommands {
         public void run() {
             cliContext.getActiveApp();
             List<Application> applications = applicationService().list();
-            System.out.println("Applications:");
             if (applications.size() == 0) {
                 System.out.println(INDENT + "No applications");
             } else {
                 String activeApp = cliContext.getActiveApp();
                 TableOutputter outputter = TableOutputter.builder()
                         .addColumn(30, "Application")
-                        //.addColumn(15, "Status")
+                        .addColumn(15, "Deployment")
+                        .addColumn(15, "Build")
                         .build();
                 for (Application application : applications) {
-
+                    AppState appState = applicationService().status(application.name);
                     String activeMarker = application.name.equals(activeApp) ? "* " : "";
                     outputter.addRow()
-                            .addColumns(activeMarker + application.name/*, application.state.name()*/)
+                            .addColumns(
+                                    activeMarker + application.name,
+                                    appState.getDeploymentState().toString(),
+                                    appState.getBuildState().toString())
                             .output();
                 }
             }
@@ -225,7 +239,6 @@ public class AppCommands {
             String activeApp = validateActiveApp();
 
             AppState appStatus = applicationService().status(activeApp);
-            // TODO fill in :-)
             System.out.println("Deployment: " + appStatus.getDeploymentState());
             System.out.println("Build: " + appStatus.getBuildState());
         }
@@ -309,8 +322,9 @@ public class AppCommands {
                     String fileName = path.getFileName().toString();
                     System.out.println("Adding " + fileName + " to application " + activeApp + "");
 
-                    System.out.println("Uploading " + activeApp);
+                    System.out.println("Uploading " + fileName + "...");
                     applicationService().addArchive(activeApp, dto);
+                    System.out.println("Upload done");
                 }
             }
         }
@@ -336,8 +350,9 @@ public class AppCommands {
                     }
                     DeploymentDto dto = new DeploymentDto(path);
                     String fileName = path.getFileName().toString();
-                    System.out.println("Uploading " + fileName + " to application " + activeApp + " for replacement");
+                    System.out.println("Uploading " + fileName + " to application " + activeApp + " for replacement...");
                     applicationService().replaceArchive(activeApp, fileName, dto);
+                    System.out.println("Upload done");
                 }
             }
         }

@@ -30,6 +30,7 @@ public class AppState implements Serializable {
     }
 
     public enum BuildState {
+        NOT_RUNNING,
         RUNNING,
         COMPLETED,
         FAILED

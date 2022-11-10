@@ -190,6 +190,9 @@ public class OpenshiftFacade {
                 // TODO get the route information
             }
         }
+        if (buildState == AppState.BuildState.COMPLETED && deploymentState == AppState.DeploymentState.NOT_DEPLOYED) {
+            buildState = AppState.BuildState.NOT_RUNNING;
+        }
         return new AppState(deploymentState, buildState);
     }
 
