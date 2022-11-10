@@ -13,7 +13,6 @@ import org.wildfly.managed.openshift.OpenshiftFacade;
 import org.wildfly.managed.repo.ApplicationRepo;
 
 import javax.inject.Inject;
-import javax.transaction.Transactional;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -202,7 +201,6 @@ public class ApplicationResource {
     @Path("/{appName}/config-file")
     public void deleteConfigFileContents(String appName, @QueryParam("type") String type) {
         try {
-            System.out.println("---> delete config");
             applicationRepo.deleteConfigFileContents(appName, type);
         } catch (RuntimeException e) {
             ExceptionUnwrapper
@@ -218,6 +216,8 @@ public class ApplicationResource {
         try {
             boolean forceBuild = force == null ? false : force;
             boolean refreshBuild = refresh == null ? false : refresh;
+            // Check application exists
+            applicationRepo.findByName(appName);
             openshiftFacade.deploy(appName, forceBuild, refreshBuild);
         } catch (RuntimeException e) {
             ExceptionUnwrapper
@@ -230,6 +230,8 @@ public class ApplicationResource {
     @Path("/{appName}/status")
     public AppState status(String appName) {
         try {
+            // Check application exists
+            applicationRepo.findByName(appName);
             return openshiftFacade.getStatus(appName);
         } catch (RuntimeException e) {
             ExceptionUnwrapper

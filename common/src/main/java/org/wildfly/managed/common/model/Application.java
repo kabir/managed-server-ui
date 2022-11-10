@@ -19,7 +19,6 @@ import static javax.persistence.FetchType.LAZY;
 public class Application extends PanacheEntity {
     @Column(unique = true)
     public String name;
-    public ApplicationState state = ApplicationState.INITIAL;
 
     @OneToMany(mappedBy = "application")
     public Collection<AppArchive> appArchives = new HashSet<>();

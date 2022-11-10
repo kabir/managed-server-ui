@@ -159,8 +159,8 @@ public class AppCommands {
             if (!verbose) {
             } else {
                 System.out.println("");
-                System.out.println("Status: " + app.state);
-                System.out.println("");
+//                System.out.println("Status: " + app.state);
+//                System.out.println("");
                 System.out.println("Configs");
                 System.out.println("-------");
                 System.out.println("XML: " + (app.hasServerConfigXml ? "y" : ""));
@@ -187,13 +187,13 @@ public class AppCommands {
                 String activeApp = cliContext.getActiveApp();
                 TableOutputter outputter = TableOutputter.builder()
                         .addColumn(30, "Application")
-                        .addColumn(15, "Status")
+                        //.addColumn(15, "Status")
                         .build();
                 for (Application application : applications) {
 
                     String activeMarker = application.name.equals(activeApp) ? "* " : "";
                     outputter.addRow()
-                            .addColumns(activeMarker + application.name, application.state.name())
+                            .addColumns(activeMarker + application.name/*, application.state.name()*/)
                             .output();
                 }
             }
