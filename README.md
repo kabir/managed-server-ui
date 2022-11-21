@@ -101,11 +101,29 @@ The above will be made nicer once things become more stable.
 
 #### Trying your own changes on OpenShift
 
-If you wish to make changes to the backend application, and deploy on OpenShift, we need to perform a few more steps.
+If you wish to make changes to the backend application, and deploy on OpenShift, we need to perform a few more steps. There is a GitHub action that performs a lot of these steps too.
 
 First of all, make sure Postgres is running on OpenShift as mentioned above.
 
-Then we need to build the application with `mvn clean install`.
+Perform the following steps.
+
+Build the application, and then rebuild the CLI in uber-jar mode:
+```shell
+mvn install -DskipTests
+mvn install -pl cli -Dquarkus.package.type=uber-jar -DskipTests
+```
+
+Copy the Helm chart we packaged earlier to where the docker file expects to find it:
+```shell
+mkdir backend/target/docker
+cp $HELM_DIR/managed-wildfly-chart-*.tgz backend/target/docker
+```
+Do the same for the build CLI jar
+```shell
+cp cli/target/*.jar backend/target/docker/managed-server-runner.jar
+```
+
+
 Once built we need to build the docker image. In this case I am simply replacing the URL of the image tag to
 be your repository on Quay.io.
 ```shell

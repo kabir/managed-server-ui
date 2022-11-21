@@ -1,5 +1,6 @@
 *
 !src/main/docker/contents/*
+!target/docker/*
 !target/*-runner
 !target/*-runner.jar
 !target/lib/*

@@ -1,0 +1,99 @@
+name: Build Managed Server Image
+on:
+  # Remove on push once more stable
+  push:
+  workflow_dispatch:
+
+jobs:
+  build-image:
+    name: Build and deploy image
+    runs-on: ubuntu-latest
+    env:
+      # This should be of the form 'quay.io'
+      IMAGE_REPO: ${{ secrets.IMAGE_REPO }}
+      # This should be of the form 'kabirk/managed-server-ui-backend-jvm'
+      IMAGE_NAME: ${{ secrets.IMAGE_NAME }}
+      # Username to log in to the repository
+      IMAGE_LOGIN_USER: ${{ secrets.IMAGE_LOGIN_USER }}
+      # Password/token to log in to the repository
+      IMAGE_LOGIN_PASSWORD: ${{ secrets.IMAGE_LOGIN_PASSWORD }}
+
+    steps:
+      - name: Validate docker settings
+        run: |
+          if [ -z "${IMAGE_REPO}" ]; then
+            echo "Secret IMAGE_REPO not set."
+            exit 1;
+          fi
+          if [ -z "${IMAGE_NAME}" ]; then
+            echo "Secret IMAGE_NAME not set."
+            exit 1;
+          fi
+          if [ -z "${IMAGE_LOGIN_USER}" ]; then
+            echo "Secret IMAGE_LOGIN_USER not set."
+            exit 1;
+          fi
+          if [ -z "${IMAGE_LOGIN_PASSWORD}" ]; then
+            echo "Secret IMAGE_LOGIN_PASSWORD not set."
+            exit 1;
+          fi
+          docker login -u="${IMAGE_LOGIN_USER}" -p="${IMAGE_LOGIN_PASSWORD}" "${IMAGE_REPO}"
+
+      - uses: azure/setup-helm@v3
+        with:
+          # default is latest (stable)
+          version: latest
+          token: ${{ secrets.GITHUB_TOKEN }} # only needed if version is 'latest'
+        id: install
+
+      - name: Setup Java JDK
+        uses: actions/setup-java@v2
+        with:
+          java-version: '11'
+          distribution: 'adopt'
+
+      - name: Checkout UI main branch
+        uses: actions/checkout@v3
+        with:
+          path: quarkus
+
+      - name: Checkout Helm chart
+        uses: actions/checkout@v3
+        with:
+          path: helm
+          repository: 'kabir/managed-wildfly-chart'
+
+      - uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-maven-
+
+      - name: Package helm chart
+        working-directory: helm
+        run: |
+          helm package .
+
+      - name: Build backend and CLI
+        working-directory: quarkus
+        run: |
+          mvn -B install -DskipTests -pl backend -am
+          # CLI in uber-jar mode
+          mvn -B install -pl cli -Dquarkus.package.type=uber-jar
+
+      - name: Copy Helm chart and CLI uberjar for Docker file
+        run: |
+          mkdir quarkus/backend/target/docker/
+          cp helm/managed-wildfly-chart-0.1.0.tgz quarkus/backend/target/docker
+          cp quarkus/cli/target/*.jar quarkus/backend/target/docker/managed-server-runner.jar
+
+      - name: Temp
+        run: |
+          ls -al quarkus/backend/target/docker
+
+      - name: Build and tag docker image
+        working-directory: quarkus
+        run: |
+          IMAGE_TAG="${IMAGE_REPO}/${IMAGE_NAME}"
+          docker build -f backend/src/main/docker/Dockerfile.jvm -t "${IMAGE_TAG}" backend/
+          docker push "${IMAGE_TAG}"

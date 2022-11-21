@@ -91,8 +91,11 @@ RUN curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/s
 # We make four distinct layers so if there are application changes the library layers can be re-used
 COPY --chown=185 target/quarkus-app/lib/ /deployments/lib/
 COPY --chown=185 src/main/docker/contents/*.sh /scripts/
-# TODO this should be installed in another way
-COPY --chown=185 src/main/docker/contents/*.tgz /scripts/
+
+# TODO Helm chart should be installed in another way
+COPY --chown=185 target/docker/*.tgz /scripts/
+COPY --chown=185 target/docker/managed-server-runner.jar /downloads/
+
 COPY --chown=185 target/quarkus-app/*.jar /deployments/
 COPY --chown=185 target/quarkus-app/app/ /deployments/app/
 COPY --chown=185 target/quarkus-app/quarkus/ /deployments/quarkus/
