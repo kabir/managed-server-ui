@@ -217,7 +217,9 @@ public class ApplicationResource {
             boolean forceBuild = force == null ? false : force;
             boolean refreshBuild = refresh == null ? false : refresh;
             // Check application exists
+            System.out.println("----> Looking for app " + appName);
             applicationRepo.findByName(appName);
+            System.out.println("----> Calling deploy " + appName);
             openshiftFacade.deploy(appName, forceBuild, refreshBuild);
         } catch (RuntimeException e) {
             ExceptionUnwrapper

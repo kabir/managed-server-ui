@@ -54,7 +54,8 @@ public class OpenshiftFacade {
 
 
     public String deploy(String appName, boolean force, boolean refresh) {
-
+        System.out.println("In OpenshiftFacade.deploy()");
+        System.out.println("Project " + openshiftProject);
         // TODO eventually we should install the Helm chart via `helm repository add`
 
         runScript(INSTALL_HELM_SCRIPT, appName, uiPaths.getTempHelmChart().toString());
