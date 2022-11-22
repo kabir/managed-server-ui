@@ -1,7 +1,5 @@
 name: Build Managed Server Image
 on:
-  # Remove on push once more stable
-  push:
   workflow_dispatch:
 
 jobs:

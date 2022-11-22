@@ -8,6 +8,7 @@ import io.fabric8.openshift.api.model.BuildStatus;
 import io.fabric8.openshift.api.model.Route;
 import io.fabric8.openshift.api.model.RouteList;
 import io.fabric8.openshift.client.OpenShiftClient;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.wildfly.managed.ServerException;
 import org.wildfly.managed.common.model.AppArchive;
 import org.wildfly.managed.common.model.Application;
@@ -46,6 +47,11 @@ public class OpenshiftFacade {
 
     @Inject
     UiPaths uiPaths;
+
+    @ConfigProperty(name = "managed.server.openshift.project")
+    String openshiftProject;
+
+
 
     public String deploy(String appName, boolean force, boolean refresh) {
 
@@ -86,7 +92,7 @@ public class OpenshiftFacade {
             String buildName = !refresh ? appName + "-deployment-build" : appName + "-update-build";
 
             build = openShiftClient.buildConfigs()
-                    .inNamespace("kkhan1-dev")
+                    .inNamespace(openshiftProject)
                     .withName(buildName)
                     .instantiateBinary()
                     .fromFile(tarBall);
