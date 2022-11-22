@@ -67,6 +67,13 @@ items:
                   # Eventually this should be a persistent volume mount
                 - name: MANAGED_SERVER_UI_BACKEND_WORKDIR
                   value: "/tmp/managed-server"
+                # TODO: We don't know these - make the user create a Helm chart with them filled in?
+                - name: MANAGED_SERVER_OPENSHIFT_SERVER
+                  value: "<oc login url>"
+                - name: MANAGED_SERVER_OPENSHIFT_TOKEN
+                  value: "<token>"
+                - name: MANAGED_SERVER_OPENSHIFT_PROJECT
+                  value: "<project>"
 
   - apiVersion: v1
     kind: Service
