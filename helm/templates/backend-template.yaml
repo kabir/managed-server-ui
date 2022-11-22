@@ -1,6 +1,13 @@
 apiVersion: v1
 kind: List
 items:
+  - apiVersion: v1
+    kind: Secret
+    metadata:
+      name: managed-server-secret
+    type: Opaque
+    stringData:
+      openshiftToken: {{ .Values.backend.openshift.token }}
   - apiVersion: image.openshift.io/v1
     kind: ImageStream
     metadata:
@@ -13,7 +20,7 @@ items:
       tags:
         - from:
             kind: DockerImage
-            name: 'quay.io/kabirk/managed-server-ui-backend-jvm'
+            name: {{ .Values.backend.image }}
           generation: null
           importPolicy: { }
           name: latest
@@ -56,7 +63,10 @@ items:
               envFrom:
                 - prefix: postgresql-secret-
                   secretRef:
-                    name: postgresql
+                    name: {{ .Values.backend.database.secretName }}
+                - prefix: managed-server-secret-
+                  secretRef:
+                    name: managed-server-secret
               env:
                 - name: QUARKUS_DATASOURCE_JDBC_URL
                   value: jdbc:postgresql://${POSTGRESQL_SERVICE_HOST}:${POSTGRESQL_SERVICE_PORT_POSTGRESQL}/${postgresql-secret-database-name}
@@ -69,20 +79,20 @@ items:
                   value: "/tmp/managed-server"
                 # TODO: We don't know these - make the user create a Helm chart with them filled in?
                 - name: MANAGED_SERVER_OPENSHIFT_SERVER
-                  value: "<oc login url>"
+                  value: {{ .Values.backend.openshift.server }}
                 - name: MANAGED_SERVER_OPENSHIFT_TOKEN
-                  value: "<token>"
+                  value: ${managed-server-secret-openshiftToken}
                 - name: MANAGED_SERVER_OPENSHIFT_PROJECT
-                  value: "<project>"
+                  value: {{ .Values.backend.openshift.project }}
 
   - apiVersion: v1
     kind: Service
     metadata:
       name: managed-server-ui-backend
+      labels:
+        app: managed-server-ui-backend
     spec:
       selector:
-        app: managed-server-ui-backend
-      labels:
         app: managed-server-ui-backend
       ipFamilies:
         - IPv4
@@ -99,7 +109,6 @@ items:
     apiVersion: route.openshift.io/v1
     metadata:
       name: managed-server-ui-backend
-      # namespace: {{ .Release.Namespace }}
       labels:
         app: managed-server-ui-backend
     spec:

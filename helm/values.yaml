@@ -1,0 +1,23 @@
+# Default values for managed-server-backend.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+backend:
+  openshift:
+    # URL of the api server (as output in 'oc login' command from the 'Show Login Command' in the console of the target
+    # OpenShift instance
+    server: ''
+    # Token to log in to OpenShift
+    token: ''
+    # The OpenShift project to use
+    project: ''
+  # The image to use. Override if you want to make changes to the code and try your own image.
+  image: quay.io/kabirk/managed-server-ui-backend-jvm
+  database:
+    # Specify when running 'helm install' if you ended up choosing a non-default when installing postgres
+    secretName: postgresql
+
+
+
+
+

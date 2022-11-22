@@ -77,64 +77,8 @@ mvn quarkus:dev -Dmanaged.server.helm.chart.location=$HELM_DIR/managed-wildfly-c
 You should now be able to manage applications via the CLI, as covered later.
 
 ### Running on OpenShift
-You might want to simply try the latest WIP from this repository, or you might want to try our your own fixes there.
-
-In both cases you will need a Postgres instance running on OpenShift. At present the name of the 
-
-To install Postgres, go to your OpenShift console, and select the 'Developer' perspective, and select 'Add' from the
-list on the right. Go to 'Database' and select 'PostgreSQL'. Keep the defaults for everything and install it.
-
-The latest image of the backend is deployed at https://quay.io/repository/kabirk/managed-server-ui-backend-jvm. 
-
-To install the backend application, simply run `oc apply -f backend/src/main/openshift/backend.yml`.
-
------
-**Note!** Once the backend application is installed, you will need to go to the OpenShift console, select the `Adminstrator` 
-view. Then edit the Deployment called `managed-server-ui-backend`. In there we will need to add the environment variables
-`MANAGED_SERVER_OPENSHIFT_SERVER` and `MANAGED_SERVER_OPENSHIFT_TOKEN` with the values from selecting `Copy login command`
-in the console. Additionally, we will need to set `MANAGED_SERVER_OPENSHIFT_PROJECT` to the name of the OpenShift project 
-on the server. You might have to scale the pods to zero and back up to one for the changes to take effect in the running pods.
-
-The above will be made nicer once things become more stable.
-
-----
-
-#### Trying your own changes on OpenShift
-
-If you wish to make changes to the backend application, and deploy on OpenShift, we need to perform a few more steps. There is a GitHub action that performs a lot of these steps too.
-
-First of all, make sure Postgres is running on OpenShift as mentioned above.
-
-Perform the following steps.
-
-Build the application, and then rebuild the CLI in uber-jar mode:
-```shell
-mvn install -DskipTests
-mvn install -pl cli -Dquarkus.package.type=uber-jar -DskipTests
-```
-
-Copy the Helm chart we packaged earlier to where the docker file expects to find it:
-```shell
-mkdir backend/target/docker
-cp $HELM_DIR/managed-wildfly-chart-*.tgz backend/target/docker
-```
-Do the same for the build CLI jar
-```shell
-cp cli/target/*.jar backend/target/docker/managed-server-runner.jar
-```
-
-
-Once built we need to build the docker image. In this case I am simply replacing the URL of the image tag to
-be your repository on Quay.io.
-```shell
-docker build -f backend/src/main/docker/Dockerfile.jvm -t quay.io/<your repo>/managed-server-ui-backend-jvm backend
-docker push quay.io/<your repo>/managed-server-ui-backend-jvm
-```
-
-You will need to update the `backend/src/main/openshift/backend.yml` file to point to the image you just pushed. This 
-is done in the `managed-server-ui-backend` ImageStream near the beginning og the file.
-
-Then do `oc apply -f backend/src/main/openshift/backend.yml` and set the required env vars as outlined above.
+Please see the [helm/README.md](./helm/README.md) for how to install this on your
+OpenShift instance, and also for instructions on how to modify the application and run it on OpenShift with your changes.
 
 ## CLI command examples
 
