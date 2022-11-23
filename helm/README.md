@@ -58,7 +58,7 @@ cp $HELM_DIR/managed-wildfly-chart-*.tgz backend/target/docker
 ```
 Do the same for the built CLI jar
 ```shell
-cp cli/target/*.jar backend/target/docker/managed-server-runner.jar
+cp cli/target/*.jar backend/target/docker/managed-server-cli.jar
 ```
 
 Once built we need to build the docker image. In this case I am simply replacing the URL of the image tag to

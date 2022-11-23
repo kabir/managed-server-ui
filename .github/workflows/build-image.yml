@@ -83,7 +83,7 @@ jobs:
         run: |
           mkdir quarkus/backend/target/docker/
           cp helm/managed-wildfly-chart-0.1.0.tgz quarkus/backend/target/docker
-          cp quarkus/cli/target/*.jar quarkus/backend/target/docker/managed-server-runner.jar
+          cp quarkus/cli/target/*.jar quarkus/backend/target/docker/managed-server-cli.jar
 
       - name: Temp
         run: |

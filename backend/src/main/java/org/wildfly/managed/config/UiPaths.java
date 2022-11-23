@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.NoSuchElementException;
+import java.util.Optional;
 
 @ApplicationScoped
 public class UiPaths {
@@ -18,12 +20,16 @@ public class UiPaths {
     @ConfigProperty(name = "managed.server.ui.backend.scriptsdir")
     String scriptsDirName;
 
+    @ConfigProperty(name = "managed.server.ui.backend.downloadsdir")
+    String downloadsDirName;
+
     // We should eventually install the Helm chart as a repository
     @ConfigProperty(name = "managed.server.helm.chart.location", defaultValue = "/scripts/managed-wildfly-chart-0.1.0.tgz")
     String tempHelmChartLocationName;
 
     private Path workingDir;
     private Path scriptsDir;
+    private Path downloadsDir;
     private Path tempHelmChartLocation;
 
     @PostConstruct
@@ -41,6 +47,11 @@ public class UiPaths {
         tempHelmChartLocation = Paths.get(tempHelmChartLocationName).toAbsolutePath();
         if (!Files.exists(tempHelmChartLocation)) {
             throw new IllegalStateException("Helm chart does not exist: " + tempHelmChartLocation);
+        }
+
+        downloadsDir = Paths.get(downloadsDirName);
+        if (!Files.exists(downloadsDir)) {
+            throw new IllegalStateException("Directory " + downloadsDirName + " does not exist");
         }
 
         System.out.println("-> workingDir " + workingDir);
@@ -61,6 +72,10 @@ public class UiPaths {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public Path getDownloadsDir() {
+        return downloadsDir;
     }
 
     public Path getScriptsDir() {
