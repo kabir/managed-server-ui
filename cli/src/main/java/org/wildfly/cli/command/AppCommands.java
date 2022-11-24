@@ -206,12 +206,23 @@ public class AppCommands {
         @CommandLine.Option(names = {"-r", "--refresh"}, description = "Refreshes the archives in a running application.")
         boolean refresh;
 
+        @CommandLine.Option(names = {"-c", "--cancel"}, description = "Cancel any running builds to abort an in-progress deploy")
+        boolean cancel;
+
         @Override
         public void run() {
+            if (cancel && (force || refresh)) {
+                printlnError("--cancel can't be used in conjunction with --force or --refresh");
+                System.exit(1);
+            }
             ApplicationSelector appSelector = ApplicationSelector.create(cliContext, appName);
             System.out.println("Deploying application...");
-            applicationService().deploy(appSelector.name, force, refresh);
-            printlnSuccess("Application deployment registered. Monitor the status with 'app status'");
+            applicationService().deploy(appSelector.name, force, refresh, cancel);
+            if (!cancel) {
+                printlnSuccess("Application deployment registered. Monitor the status with 'app status'");
+            } else {
+                printlnSuccess("Application deployment cancelled.");
+            }
         }
     }
 

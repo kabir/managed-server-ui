@@ -7,6 +7,7 @@ import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 import org.wildfly.managed.common.model.AppArchive;
 import org.wildfly.managed.common.model.Application;
+import org.wildfly.managed.common.model.DeploymentRecord;
 import org.wildfly.managed.common.value.AppState;
 import org.wildfly.managed.config.UiPaths;
 import org.wildfly.managed.openshift.OpenshiftFacade;
@@ -77,7 +78,7 @@ public class ApplicationResource {
             applicationRepo.findByName(appName);
             AppState state = openshiftFacade.getStatus(appName);
             if (!forceDelete && (state.getDeploymentState() != AppState.DeploymentState.NOT_DEPLOYED || state.getBuildState() == AppState.BuildState.RUNNING)) {
-                throw new ServerException(Response.Status.CONFLICT, "Can't delete a running application, or one in the process of being built. Stop it first, or force delete.");
+                throw new ServerException(Response.Status.CONFLICT, "Can't delete a running application, or one in the process of being built. Stop it first, or force delete. If the status shows it is being built and you want to keep the application running, cancel the deploy.");
             }
             applicationRepo.delete(appName);
             openshiftFacade.delete(appName);
@@ -92,9 +93,16 @@ public class ApplicationResource {
     @PUT
     @Path("/{appName}/stop")
     public void stop(String appName) {
+        AppState.BuildState buildState = null;
         try {
             applicationRepo.findByName(appName);
-            openshiftFacade.stop(appName);
+            buildState = openshiftFacade.stop(appName);
+            DeploymentRecord.Status state = null;
+            if (buildState == AppState.BuildState.RUNNING || buildState == AppState.BuildState.NOT_RUNNING) {
+                applicationRepo.recordDeploymentEnd(appName, DeploymentRecord.Status.CANCELLED);
+                // Don't think we need to handle Completed/Failed since that should have been recorded elsewhere. Probably/possibly...
+            }
+
         } catch (RuntimeException e) {
             ExceptionUnwrapper
                     .create(ServerException.class, () -> (ServerException) e)
@@ -212,15 +220,29 @@ public class ApplicationResource {
     @ResponseStatus(202) // ACCEPTED
     @POST
     @Path("/{appName}/deploy")
-     public void deploy(String appName, @QueryParam("force") Boolean force, @QueryParam("refresh") Boolean refresh) {
+     public void deploy(String appName, @QueryParam("force") Boolean force, @QueryParam("refresh") Boolean refresh, @QueryParam("cancel") Boolean cancel) {
         try {
             boolean forceBuild = force == null ? false : force;
             boolean refreshBuild = refresh == null ? false : refresh;
+            boolean cancelBuild = cancel == null ? false : cancel;
             // Check application exists
             System.out.println("----> Looking for app " + appName);
-            applicationRepo.findByName(appName);
-            System.out.println("----> Calling deploy " + appName);
-            openshiftFacade.deploy(appName, forceBuild, refreshBuild);
+            if (!cancelBuild) {
+                try {
+                    // Lock the application
+                    applicationRepo.recordDeploymentStart(appName);
+
+                    System.out.println("----> Calling deploy " + appName);
+                    openshiftFacade.deploy(appName, forceBuild, refreshBuild);
+                } catch (RuntimeException e) {
+                    applicationRepo.recordDeploymentEnd(appName, DeploymentRecord.Status.FAILED);
+                    throw e;
+                }
+            } else {
+                openshiftFacade.cancelBuild(appName);
+                // Release the lock
+                applicationRepo.recordDeploymentEnd(appName, DeploymentRecord.Status.CANCELLED);
+            }
         } catch (RuntimeException e) {
             ExceptionUnwrapper
                     .create(ServerException.class, () -> (ServerException) e)

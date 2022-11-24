@@ -1,5 +1,6 @@
 package org.wildfly.managed.common.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 
 import org.hibernate.annotations.LazyGroup;
@@ -9,9 +10,10 @@ import javax.persistence.Basic;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.OneToMany;
-import java.sql.Date;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 
 import static javax.persistence.FetchType.LAZY;
 
@@ -22,6 +24,12 @@ public class Application extends PanacheEntity {
 
     @OneToMany(mappedBy = "application")
     public Collection<AppArchive> appArchives = new HashSet<>();
+
+    @JsonIgnore
+    @Basic(fetch = LAZY)
+    @LazyGroup("deploymentRecord")
+    @OneToMany(mappedBy = "application")
+    public List<DeploymentRecord> deploymentRecords = new ArrayList<>();
 
     @Basic(fetch = LAZY)
     @LazyGroup("serverConfigXml")
@@ -44,11 +52,16 @@ public class Application extends PanacheEntity {
 
     public boolean hasServerInitYml;
 
-    public void loadLazyFields() {
+    public void loadConfigFields() {
         Object tmp = serverConfigXml;
         tmp = serverInitCli;
         tmp = serverInitYml;
         tmp = appArchives;
     }
+
+    public void loadDeploymentRecords() {
+        Object tmp = deploymentRecords;
+    }
+
 }
 

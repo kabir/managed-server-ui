@@ -1,15 +1,20 @@
 package org.wildfly.managed.repo;
 
+import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import io.quarkus.panache.common.Parameters;
 import org.wildfly.managed.ConfigFileInspection;
 import org.wildfly.managed.ServerException;
 import org.wildfly.managed.common.model.AppArchive;
 import org.wildfly.managed.common.model.Application;
+import org.wildfly.managed.common.model.DeploymentRecord;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.transaction.Transactional;
 import javax.ws.rs.core.Response;
+import java.sql.Date;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -38,7 +43,7 @@ public class ApplicationRepo implements PanacheRepository<Application> {
     public Application getApplication(String name, boolean verbose) {
         Application application = findByName(name);
         if (verbose) {
-            application.loadLazyFields();
+            application.loadConfigFields();
         }
         getEntityManager().detach(application);
 
@@ -56,9 +61,16 @@ public class ApplicationRepo implements PanacheRepository<Application> {
         // For validation, will throw an error if not found
         Application app = findByName(name);
 
+        // We don't need to do this here, since if we reach this point we have removed it on OpenShift
+        //checkCanModifyApplication(app);
+
         for (AppArchive archive : app.appArchives) {
             archive.application = null;
             archive.delete();
+        }
+        for (DeploymentRecord deploymentRecord : app.deploymentRecords) {
+            deploymentRecord.application = null;
+            deploymentRecord.delete();
         }
         delete("name", name);
     }
@@ -81,6 +93,9 @@ public class ApplicationRepo implements PanacheRepository<Application> {
     @Transactional
     public void createApplicationArchive(Application application, String fileName, ConfigFileInspection configFileInspection) {
         application = findByName(application.name);
+
+        checkCanModifyApplication(application);
+
         AppArchive appArchive = new AppArchive();
         appArchive.application = application;
         appArchive.fileName = fileName;
@@ -104,6 +119,8 @@ public class ApplicationRepo implements PanacheRepository<Application> {
     public void updateApplicationArchive(Application application, String fileName, ConfigFileInspection configFileInspection) {
         System.out.println("Updating " + fileName);
         application = findByName(application.name);
+
+        checkCanModifyApplication(application);
 
         AppArchive found = findByApplicationAndName(application, fileName);
         if (found == null) {
@@ -140,6 +157,7 @@ public class ApplicationRepo implements PanacheRepository<Application> {
     @Transactional
     public void deleteApplicationArchive(Application application, String fileName) {
         application = findByName(application.name);
+        checkCanModifyApplication(application);
         AppArchive appArchive = findByApplicationAndName(application, fileName);
         if (appArchive != null) {
             application.appArchives.remove(appArchive);
@@ -182,6 +200,8 @@ public class ApplicationRepo implements PanacheRepository<Application> {
     public void setConfigFileContents(String appName, String type, String contents) {
         Application application = findByName(appName);
 
+        checkCanModifyApplication(application);
+
         System.out.println("Setting Contents: " + contents);
         if (type.equals("xml")) {
             System.out.println("xml!");
@@ -201,6 +221,8 @@ public class ApplicationRepo implements PanacheRepository<Application> {
     @Transactional
     public void deleteConfigFileContents(String appName, String type) {
         Application application = findByName(appName);
+
+        checkCanModifyApplication(application);
 
         System.out.println("Deleting Config: ");
         if (type.equals("xml")) {
@@ -223,10 +245,71 @@ public class ApplicationRepo implements PanacheRepository<Application> {
     }
 
     private AppArchive findByApplicationAndName(Application application, String name) {
-        AppArchive appArchive = AppArchive.find("application=:application AND fileName=:name",
+        AppArchive appArchive = AppArchive.find(
+                "application=:application AND fileName=:name",
                 Parameters
                         .with("application", application)
                         .and("name", name)).firstResult();
         return appArchive;
+    }
+
+    @Transactional
+    public void recordDeploymentStart(String appName) {
+        Application application = findByName(appName);
+        DeploymentRecord deploymentRecord = new DeploymentRecord();
+        deploymentRecord.startTime = LocalDateTime.now();
+        application.deploymentRecords.add(deploymentRecord);
+        deploymentRecord.application = application;
+        deploymentRecord.persist();
+    }
+
+
+    @Transactional
+    public void recordDeploymentEnd(String appName, DeploymentRecord.Status status) {
+        DeploymentRecord record = getRunningDeployment(appName);
+        if (record != null) {
+            record.endTime = LocalDateTime.now();
+            record.status = status;
+        }
+    }
+
+    @Transactional
+    public DeploymentRecord getRunningDeployment(String appName) {
+        Application application;
+        try {
+            application = findByName(appName);
+        } catch (Exception e) {
+            return null;
+        }
+        return getRunningDeployment(application);
+    }
+
+    private DeploymentRecord getRunningDeployment(Application application) {
+        DeploymentRecord record = null;
+        try {
+            record = DeploymentRecord.find(
+                    "application=:application AND endTime IS NULL",
+                    Parameters
+                            .with("application", application)).firstResult();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+        return record;
+    }
+
+    private void checkCanModifyApplication(Application application) {
+        DeploymentRecord record = getRunningDeployment(application);
+        if (record != null) {
+            throw new ServerException(
+                    Response.Status.CONFLICT,
+                    "The application is currently being deployed. While that is happening you cannot modify the application. " +
+                            "Cancel the deploy in order to be able to modify the application.");
+        }
+    }
+
+    @Transactional
+    public List<DeploymentRecord> getAllRunningDeployments() {
+        return DeploymentRecord.find("endTime IS NULL").list();
     }
 }

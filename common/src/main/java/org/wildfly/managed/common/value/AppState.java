@@ -30,9 +30,19 @@ public class AppState implements Serializable {
     }
 
     public enum BuildState {
-        NOT_RUNNING,
-        RUNNING,
-        COMPLETED,
-        FAILED
+        NOT_RUNNING(false),
+        RUNNING(false),
+        COMPLETED(true),
+        FAILED(true);
+
+        private final boolean done;
+
+        BuildState(boolean done) {
+            this.done = done;
+        }
+
+        public boolean isDone() {
+            return done;
+        }
     }
 }

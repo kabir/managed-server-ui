@@ -114,6 +114,11 @@ public class OpenshiftFacade {
         return build.getMetadata().getName();
     }
 
+    public void cancelBuild(String appName) {
+        deleteAllBuilds(appName);
+    }
+
+
     private void outputConfigFilesToAppDirectory(String appName) {
         Application application = applicationRepo.findByName(appName);
         Path appDir = uiPaths.getApplicationDir(appName);
@@ -210,9 +215,11 @@ public class OpenshiftFacade {
         runScript(UNINSTALL_HELM_SCRIPT, appName);
     }
 
-    public void stop(String appName) {
+    public AppState.BuildState stop(String appName) {
+        AppState.BuildState buildState = getBuildState(appName);
         openShiftClient.builds().withLabel("app", appName).delete();
         openShiftClient.apps().deployments().withLabel("app", appName).delete();
+        return buildState;
     }
 
     private AppState.DeploymentState getDeploymentStatus(String appName) {
@@ -226,16 +233,17 @@ public class OpenshiftFacade {
             return AppState.DeploymentState.RUNNING;
         }
 
-        // TODO needs more tightening up. There might be errors etc, or scaling considerations etc.
+        // TODO needs more tightening up. There might be errors, or scaling considerations etc.
         return AppState.DeploymentState.DEPLOYING;
     }
 
-    private AppState.BuildState getBuildState(String appName) {
+    public AppState.BuildState getBuildState(String appName) {
         Application app = applicationRepo.findByName(appName);
         BuildList buildList = openShiftClient.builds().withLabel("app", appName).list();
 
         // TODO don't include old builds
         System.out.println("Checking build statuses");
+
         for (Build build : buildList.getItems()) {
             BuildStatus status = build.getStatus();
             String start = status.getStartTimestamp();
@@ -252,7 +260,8 @@ public class OpenshiftFacade {
         }
 
         // TODO figure out how to determine the state of each build from their BuildStatus
-        return AppState.BuildState.COMPLETED;
+
+        return buildList.getItems().size() == 0 ? AppState.BuildState.NOT_RUNNING : AppState.BuildState.COMPLETED;
     }
 
     private boolean hasRunningBuilds(String appName) {

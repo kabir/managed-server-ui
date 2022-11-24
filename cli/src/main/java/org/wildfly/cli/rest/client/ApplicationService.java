@@ -44,7 +44,7 @@ public interface ApplicationService {
 
     @POST
     @Path("/{name}/deploy")
-    void deploy(String name, @QueryParam("force") Boolean force, @QueryParam("refresh") Boolean refresh);
+    void deploy(String name, @QueryParam("force") Boolean force, @QueryParam("refresh") Boolean refresh, @QueryParam("cancel") boolean cancel);
 
     @ResponseStatus(204) // NO_CONTENT
     @PUT
