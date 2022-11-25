@@ -9,10 +9,12 @@ public class AppState implements Serializable {
 
     private final DeploymentState deploymentState;
     private final BuildState buildState;
+    private StageState stageState;
 
-    public AppState(DeploymentState deploymentState, BuildState buildState) {
+    public AppState(DeploymentState deploymentState, BuildState buildState, StageState stageState) {
         this.deploymentState = deploymentState;
         this.buildState = buildState;
+        this.stageState = stageState;
     }
 
     public DeploymentState getDeploymentState() {
@@ -23,12 +25,18 @@ public class AppState implements Serializable {
         return buildState;
     }
 
+    public StageState getStageState() {
+        return stageState;
+    }
+
+    // Whether the application is deployed or not
     public enum DeploymentState {
         NOT_DEPLOYED,
         RUNNING,
         DEPLOYING
     }
 
+    // Whether a build is in progress
     public enum BuildState {
         NOT_RUNNING(false),
         RUNNING(false),
@@ -44,5 +52,12 @@ public class AppState implements Serializable {
         public boolean isDone() {
             return done;
         }
+    }
+
+
+    // Whether the files on the server are newer than the ones in a deployed application
+    public enum StageState {
+        STAGED_CHANGES,
+        UP_TO_DATE
     }
 }

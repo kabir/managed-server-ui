@@ -12,6 +12,7 @@ class Renderers {
     static void renderAppStatus(AppState appStatus) {
         System.out.println("Deployment: " + appStatus.getDeploymentState());
         System.out.println("Build: " + appStatus.getBuildState());
+        System.out.println("Stage: " + appStatus.getStageState());
     }
 
     static void renderAppArchives(List<AppArchive> appArchives) {

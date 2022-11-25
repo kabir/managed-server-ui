@@ -197,7 +197,11 @@ public class OpenshiftFacade {
         if (buildState == AppState.BuildState.COMPLETED && deploymentState == AppState.DeploymentState.NOT_DEPLOYED) {
             buildState = AppState.BuildState.NOT_RUNNING;
         }
-        return new AppState(deploymentState, buildState);
+
+        AppState.StageState stageState =
+                (deploymentState == AppState.DeploymentState.DEPLOYING || deploymentState == AppState.DeploymentState.RUNNING) ?
+                        applicationRepo.getStageStatus(appName) : AppState.StageState.UP_TO_DATE;
+        return new AppState(deploymentState, buildState, stageState);
     }
 
     public List<String> getRoutes(String appName) {

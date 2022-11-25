@@ -10,6 +10,8 @@ import javax.persistence.Basic;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.OneToMany;
+import javax.persistence.PrePersist;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -57,6 +59,18 @@ public class Application extends PanacheEntity {
         tmp = serverInitCli;
         tmp = serverInitYml;
         tmp = appArchives;
+    }
+
+    @Column(columnDefinition = "TIMESTAMP")
+    public LocalDateTime lastConfigChange;
+
+    @Column(columnDefinition = "TIMESTAMP")
+    public LocalDateTime lastArchiveChange;
+
+    @PrePersist
+    public void prePersist() {
+        lastConfigChange = LocalDateTime.now();
+        lastArchiveChange = LocalDateTime.now();
     }
 
     public void loadDeploymentRecords() {

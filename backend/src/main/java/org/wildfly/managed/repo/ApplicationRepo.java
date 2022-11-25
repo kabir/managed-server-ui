@@ -1,6 +1,7 @@
 package org.wildfly.managed.repo;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
+import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import io.quarkus.panache.common.Parameters;
 import org.wildfly.managed.ConfigFileInspection;
@@ -8,6 +9,7 @@ import org.wildfly.managed.ServerException;
 import org.wildfly.managed.common.model.AppArchive;
 import org.wildfly.managed.common.model.Application;
 import org.wildfly.managed.common.model.DeploymentRecord;
+import org.wildfly.managed.common.value.AppState;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.transaction.Transactional;
@@ -111,6 +113,7 @@ public class ApplicationRepo implements PanacheRepository<Application> {
         checkNoDuplicateConfigFiles(application, appArchive);
         appArchives.add(appArchive);
         application.appArchives = appArchives;
+        application.lastArchiveChange = LocalDateTime.now();
 
         appArchive.persist();
     }
@@ -132,6 +135,7 @@ public class ApplicationRepo implements PanacheRepository<Application> {
             found.serverInitYml = configFileInspection.isServerInitYml();
         }
         checkNoDuplicateConfigFiles(application, found);
+        application.lastArchiveChange = LocalDateTime.now();
         System.out.println("--- done");
     }
 
@@ -163,6 +167,7 @@ public class ApplicationRepo implements PanacheRepository<Application> {
             application.appArchives.remove(appArchive);
             appArchive.delete();
             appArchive.application = null;
+            application.lastArchiveChange = LocalDateTime.now();
         } else {
             throw new ServerException(Response.Status.NOT_FOUND, "No existing archive called " + fileName);
         }
@@ -216,6 +221,7 @@ public class ApplicationRepo implements PanacheRepository<Application> {
             application.serverInitYml = contents;
             application.hasServerInitYml = contents != null;
         }
+        application.lastConfigChange = LocalDateTime.now();
     }
 
     @Transactional
@@ -242,6 +248,7 @@ public class ApplicationRepo implements PanacheRepository<Application> {
             application.serverInitYml = null;
             application.hasServerInitYml = false;
         }
+        application.lastConfigChange = LocalDateTime.now();
     }
 
     private AppArchive findByApplicationAndName(Application application, String name) {
@@ -311,5 +318,42 @@ public class ApplicationRepo implements PanacheRepository<Application> {
     @Transactional
     public List<DeploymentRecord> getAllRunningDeployments() {
         return DeploymentRecord.find("endTime IS NULL").list();
+    }
+
+    public AppState.StageState getStageStatus(String appName) {
+        Application application = findByName(appName);
+
+        // Find last successful deployment
+        PanacheQuery<DeploymentRecord> query = DeploymentRecord.find(
+                "application=:application AND status=:status ORDER BY startTime DESC",
+                Parameters
+                        .with("application", application)
+                        .and("status", DeploymentRecord.Status.COMPLETED)
+                );
+
+        PanacheQuery<DeploymentRecord> query2 = DeploymentRecord.find(
+                "application=:application AND status=:status ORDER BY startTime DESC",
+                Parameters
+                        .with("application", application)
+                        .and("status", DeploymentRecord.Status.FAILED)
+        );
+
+        PanacheQuery<DeploymentRecord> query3 = DeploymentRecord.find(
+                "application=:application AND status=:status ORDER BY startTime DESC",
+                Parameters
+                        .with("application", application)
+                        .and("status", DeploymentRecord.Status.CANCELLED)
+        );
+        System.out.println(query.count());
+        System.out.println(query2.count());
+        System.out.println(query3.count());
+
+        if (query.count() > 0) {
+            LocalDateTime lastTime = query.firstResult().startTime;
+            if (lastTime.isBefore(application.lastArchiveChange) || lastTime.isBefore(application.lastConfigChange)) {
+                return AppState.StageState.STAGED_CHANGES;
+            }
+        }
+        return AppState.StageState.UP_TO_DATE;
     }
 }
