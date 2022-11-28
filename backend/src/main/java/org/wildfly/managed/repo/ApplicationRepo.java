@@ -261,13 +261,26 @@ public class ApplicationRepo implements PanacheRepository<Application> {
     }
 
     @Transactional
-    public void recordDeploymentStart(String appName) {
+    public void recordDeploymentStart(String appName, boolean cancelExisting) {
+        if (getRunningDeployment(appName) != null) {
+            recordDeploymentEnd(appName, DeploymentRecord.Status.CANCELLED);
+        }
         Application application = findByName(appName);
+        DeploymentRecord current = getRunningDeployment(application);
+        if (current != null) {
+
+        }
         DeploymentRecord deploymentRecord = new DeploymentRecord();
         deploymentRecord.startTime = LocalDateTime.now();
         application.deploymentRecords.add(deploymentRecord);
         deploymentRecord.application = application;
         deploymentRecord.persist();
+    }
+
+    @Transactional
+    public void recordTriggeredBuild(String appName) {
+        DeploymentRecord record = getRunningDeployment(appName);
+        record.buildTriggered = true;
     }
 
 

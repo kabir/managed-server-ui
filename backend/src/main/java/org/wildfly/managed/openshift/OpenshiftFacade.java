@@ -12,6 +12,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.wildfly.managed.ServerException;
 import org.wildfly.managed.common.model.AppArchive;
 import org.wildfly.managed.common.model.Application;
+import org.wildfly.managed.common.model.DeploymentRecord;
 import org.wildfly.managed.common.value.AppState;
 import org.wildfly.managed.config.UiPaths;
 import org.wildfly.managed.repo.ApplicationConfigs;
@@ -79,43 +80,53 @@ public class OpenshiftFacade {
             } else {
                 // It would be nice to cancel the running builds here but I don't see how to just cancel.
                 // The delete we are doing later
+                applicationRepo.recordDeploymentEnd(appName, DeploymentRecord.Status.CANCELLED);
             }
         }
 
-        deleteAllBuilds(appName);
-
-        outputConfigFilesToAppDirectory(appName);
-
-        Path appDir = uiPaths.getApplicationDir(appName);
-        File tarBall = Packaging.packageFile(appDir, appDir);
-        Build build;
+        // Unlock any existing builds and record the new one. Do this before all the OpenShift interaction
+        applicationRepo.recordDeploymentStart(appName, true);
         try {
-            String buildName = !refresh ? appName + "-deployment-build" : appName + "-update-build";
+            deleteAllBuilds(appName);
 
-            build = openShiftClient.buildConfigs()
-                    .inNamespace(openshiftProject)
-                    .withName(buildName)
-                    .instantiateBinary()
-                    .fromFile(tarBall);
-        } finally {
+            outputConfigFilesToAppDirectory(appName);
+
+            Path appDir = uiPaths.getApplicationDir(appName);
+            File tarBall = Packaging.packageFile(appDir, appDir);
+            Build build;
             try {
-                Files.delete(Paths.get(tarBall.toURI()));
-            } catch (IOException nonFatal) {
-                System.out.println("Could not delete temporary tarball for app '" + appName + "' " + tarBall.getAbsolutePath() + ". Message: " + nonFatal.getMessage());
+                String buildName = !refresh ? appName + "-deployment-build" : appName + "-update-build";
+
+                build = openShiftClient.buildConfigs()
+                        .inNamespace(openshiftProject)
+                        .withName(buildName)
+                        .instantiateBinary()
+                        .fromFile(tarBall);
+                applicationRepo.recordTriggeredBuild(appName);
+            } finally {
+                try {
+                    Files.delete(Paths.get(tarBall.toURI()));
+                } catch (IOException nonFatal) {
+                    System.out.println("Could not delete temporary tarball for app '" + appName + "' " + tarBall.getAbsolutePath() + ". Message: " + nonFatal.getMessage());
+                }
+                try {
+                    deleteIfExists(appDir.resolve(SERVER_CONFIG_XML), true);
+                    deleteIfExists(appDir.resolve(SERVER_CONFIG_XML), true);
+                    deleteIfExists(appDir.resolve(SERVER_CONFIG_XML), true);
+                } catch (IOException ignore) {
+                    // Won't happen since we swallow it in the deleteIfExists call
+                }
             }
-            try {
-                deleteIfExists(appDir.resolve(SERVER_CONFIG_XML), true);
-                deleteIfExists(appDir.resolve(SERVER_CONFIG_XML), true);
-                deleteIfExists(appDir.resolve(SERVER_CONFIG_XML), true);
-            } catch (IOException ignore) {
-                // Won't happen since we swallow it in the deleteIfExists call
-            }
+            return build.getMetadata().getName();
+        } catch (Error | RuntimeException e) {
+            applicationRepo.recordDeploymentEnd(appName, DeploymentRecord.Status.FAILED);
+            throw e;
         }
-        return build.getMetadata().getName();
     }
 
     public void cancelBuild(String appName) {
         deleteAllBuilds(appName);
+        applicationRepo.recordDeploymentEnd(appName, DeploymentRecord.Status.CANCELLED);
     }
 
 

@@ -17,6 +17,8 @@ public class DeploymentRecord extends PanacheEntity {
     @ManyToOne
     public Application application;
 
+    public boolean buildTriggered;
+
     @Column(columnDefinition = "TIMESTAMP")
     public LocalDateTime startTime;
 

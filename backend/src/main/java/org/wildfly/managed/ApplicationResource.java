@@ -229,19 +229,13 @@ public class ApplicationResource {
             System.out.println("----> Looking for app " + appName);
             if (!cancelBuild) {
                 try {
-                    // Lock the application
-                    applicationRepo.recordDeploymentStart(appName);
-
                     System.out.println("----> Calling deploy " + appName);
                     openshiftFacade.deploy(appName, forceBuild, refreshBuild);
                 } catch (RuntimeException e) {
-                    applicationRepo.recordDeploymentEnd(appName, DeploymentRecord.Status.FAILED);
                     throw e;
                 }
             } else {
                 openshiftFacade.cancelBuild(appName);
-                // Release the lock
-                applicationRepo.recordDeploymentEnd(appName, DeploymentRecord.Status.CANCELLED);
             }
         } catch (RuntimeException e) {
             ExceptionUnwrapper

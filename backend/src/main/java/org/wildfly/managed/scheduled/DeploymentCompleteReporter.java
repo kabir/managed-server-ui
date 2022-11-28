@@ -26,6 +26,9 @@ public class DeploymentCompleteReporter {
         try {
             List<DeploymentRecord> records = applicationRepo.getAllRunningDeployments();
             for (DeploymentRecord record : records) {
+                if (!record.buildTriggered) {
+                    continue;
+                }
                 AppState.BuildState buildState = openshiftFacade.getBuildState(record.application.name);
                 System.out.println("State for " + record.application.name + " " + buildState);
                 if (buildState.isDone()) {
