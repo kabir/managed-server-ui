@@ -8,6 +8,7 @@ import org.wildfly.cli.context.CliContext;
 import org.wildfly.cli.util.ColouredWriter;
 import org.wildfly.managed.common.model.AppArchive;
 import org.wildfly.managed.common.model.Application;
+import org.wildfly.managed.common.model.DatabaseConnection;
 import org.wildfly.managed.common.value.AppState;
 
 import javax.ws.rs.Consumes;
@@ -16,6 +17,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
@@ -125,4 +127,15 @@ public interface ApplicationService {
         return (ApplicationService) o;
     }
 
+    @POST
+    @Path("/{appName}/db")
+    void createDatabaseConnection(String appName, DatabaseConnection dbConn);
+
+    @DELETE
+    @Path("/{appName}/db/{jndiName}")
+    void deleteDatabaseConnection(String appName, String jndiName);
+
+    @GET
+    @Path("/{appName}/db")
+    List<DatabaseConnection> listDatabaseConnections(String appName);
 }

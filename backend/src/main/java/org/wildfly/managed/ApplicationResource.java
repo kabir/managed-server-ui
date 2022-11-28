@@ -7,6 +7,7 @@ import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 import org.wildfly.managed.common.model.AppArchive;
 import org.wildfly.managed.common.model.Application;
+import org.wildfly.managed.common.model.DatabaseConnection;
 import org.wildfly.managed.common.model.DeploymentRecord;
 import org.wildfly.managed.common.value.AppState;
 import org.wildfly.managed.config.UiPaths;
@@ -272,6 +273,24 @@ public class ApplicationResource {
                     .throwServerException(e);
             return null;
         }
+    }
+
+    @POST
+    @Path("/{appName}/db")
+    public void createDatabaseConnection(String appName, DatabaseConnection dbConn) {
+        applicationRepo.createDatabaseConnection(appName, dbConn);
+    }
+
+    @DELETE
+    @Path("/{appName}/db/{jndiName}")
+    public void deleteDatabaseConnection(String appName, String jndiName) {
+        applicationRepo.deleteDatabaseConnection(appName, jndiName);
+    }
+
+    @GET
+    @Path("/{appName}/db")
+    public List<DatabaseConnection> listDatabaseConnections(String appName) {
+        return applicationRepo.getDatabaseConnections(appName);
     }
 
 

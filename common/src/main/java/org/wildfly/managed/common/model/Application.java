@@ -33,6 +33,12 @@ public class Application extends PanacheEntity {
     @OneToMany(mappedBy = "application")
     public List<DeploymentRecord> deploymentRecords = new ArrayList<>();
 
+    @JsonIgnore
+    @Basic(fetch = LAZY)
+    @LazyGroup("dbConnection")
+    @OneToMany(mappedBy = "application")
+    public List<DatabaseConnection> dbConnections = new ArrayList<>();
+
     @Basic(fetch = LAZY)
     @LazyGroup("serverConfigXml")
     @Type( type = "text")
@@ -54,13 +60,6 @@ public class Application extends PanacheEntity {
 
     public boolean hasServerInitYml;
 
-    public void loadConfigFields() {
-        Object tmp = serverConfigXml;
-        tmp = serverInitCli;
-        tmp = serverInitYml;
-        tmp = appArchives;
-    }
-
     @Column(columnDefinition = "TIMESTAMP")
     public LocalDateTime lastConfigChange;
 
@@ -71,6 +70,13 @@ public class Application extends PanacheEntity {
     public void prePersist() {
         lastConfigChange = LocalDateTime.now();
         lastArchiveChange = LocalDateTime.now();
+    }
+
+    public void loadConfigFields() {
+        Object tmp = serverConfigXml;
+        tmp = serverInitCli;
+        tmp = serverInitYml;
+        tmp = appArchives;
     }
 
     public void loadDeploymentRecords() {

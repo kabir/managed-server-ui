@@ -3,10 +3,10 @@ package org.wildfly.cli.command;
 import org.wildfly.cli.context.CliContext;
 import org.wildfly.cli.rest.client.ApplicationService;
 import org.wildfly.cli.rest.client.DeploymentDto;
-import org.wildfly.cli.util.ColouredWriter;
 import org.wildfly.cli.util.TableRenderer;
 import org.wildfly.managed.common.model.AppArchive;
 import org.wildfly.managed.common.model.Application;
+import org.wildfly.managed.common.model.DatabaseConnection;
 import org.wildfly.managed.common.value.AppState;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -33,6 +33,7 @@ import static org.wildfly.cli.util.ColouredWriter.printlnWarning;
                 AppCommands.StopCommand.class,
                 AppCommands.StatusCommand.class,
                 AppCommands.ArchiveCommands.class,
+                AppCommands.DatabaseCommands.class,
                 AppCommands.ConfigCommands.class
         })
 public class AppCommands {
@@ -156,6 +157,12 @@ public class AppCommands {
                 for (String route : routes) {
                     System.out.println(route);
                 }
+
+                System.out.println("");
+                System.out.println("Database Connections");
+                System.out.println("--------------------");
+                List<DatabaseConnection> connections = applicationService().listDatabaseConnections(appSelector.name);
+                Renderers.renderDatabaseConnections(connections);
 
                 System.out.println("");
                 System.out.println("Archives:");
@@ -432,6 +439,90 @@ public class AppCommands {
         }
 
     }
+
+    @Command(
+            name = "database",
+            description = "Database connection commands",
+            mixinStandardHelpOptions = true,
+            subcommands = {
+                    DatabaseCommands.AddCommand.class,
+                    DatabaseCommands.ListCommand.class,
+                    DatabaseCommands.DeleteCommand.class
+            })
+    static final class DatabaseCommands {
+
+        static abstract class BaseDatabaseCommand extends BaseAppCommand {
+        }
+
+        @Command(name = "add", description = "Adds a database connection.", mixinStandardHelpOptions = true)
+        static class AddCommand extends BaseDatabaseCommand {
+
+            @CommandLine.Option(names = {"-n", "--name"}, description = "Name of the application. If omitted, the current application is used.")
+            String appName;
+
+            @CommandLine.Option(names = {"-j", "--jndi"}, description = "JNDI name of the datasource.", required = true)
+            String jndiName;
+
+            @CommandLine.Option(names = {"-d", "--database"}, description = "Name of the database.", required = true)
+            String dbName;
+
+            @CommandLine.Option(names = {"-u", "--user"}, description = "Database user.", required = true)
+            String user;
+
+            @CommandLine.Option(names = {"-p", "--password"}, description = "Database password.", required = true)
+            String password;
+
+            @CommandLine.Option(names = {"-a", "--url"}, description = "Datasource URL.", required = true)
+            String url;
+
+            @Override
+            public void run() {
+                System.out.println(jndiName + " " + dbName + " " + user + " " + password + " " + url);
+                ApplicationSelector appSelector = ApplicationSelector.create(cliContext, appName);
+                DatabaseConnection dbConn = new DatabaseConnection();
+                dbConn.jndiName = jndiName;
+                dbConn.databaseName = dbName;
+                dbConn.username = user;
+                dbConn.password = password;
+                dbConn.url = url;
+                // TODO add this via command line
+                dbConn.type = DatabaseConnection.Type.POSTGRES;
+                applicationService().createDatabaseConnection(appSelector.name, dbConn);
+                printlnSuccess("Database connection " + jndiName + " created in application " + appSelector.name);
+            }
+        }
+
+        @Command(name = "delete", description = "Deletes a database connection.", mixinStandardHelpOptions = true)
+        static class DeleteCommand extends BaseDatabaseCommand {
+            @CommandLine.Option(names = {"-n", "--name"}, description = "Name of the application. If omitted, the current application is used.")
+            String appName;
+
+            @CommandLine.Option(names = {"-j", "--jndi"}, description = "JNDI name of the datasource.", required = true)
+            String jndiName;
+
+            @Override
+            public void run() {
+                ApplicationSelector appSelector = ApplicationSelector.create(cliContext, appName);
+                applicationService().deleteDatabaseConnection(appSelector.name, jndiName);
+                printlnSuccess("Database connection " + jndiName + " deleted from application " + appSelector.name);
+            }
+        }
+
+        @Command(name = "list", description = "lists the database connections for an application.", mixinStandardHelpOptions = true)
+        static class ListCommand extends BaseDatabaseCommand {
+            @CommandLine.Option(names = {"-n", "--name"}, description = "Name of the application. If omitted, the current application is used.")
+            String appName;
+
+            public void run() {
+                ApplicationSelector appSelector = ApplicationSelector.create(cliContext, appName);
+                List<DatabaseConnection> connections = applicationService().listDatabaseConnections(appSelector.name);
+                Renderers.renderDatabaseConnections(connections);
+                // TODO output
+            }
+        }
+
+    }
+
 
     private static class ApplicationSelector {
         private final String name;

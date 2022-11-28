@@ -8,6 +8,7 @@ import org.wildfly.managed.ConfigFileInspection;
 import org.wildfly.managed.ServerException;
 import org.wildfly.managed.common.model.AppArchive;
 import org.wildfly.managed.common.model.Application;
+import org.wildfly.managed.common.model.DatabaseConnection;
 import org.wildfly.managed.common.model.DeploymentRecord;
 import org.wildfly.managed.common.value.AppState;
 
@@ -344,23 +345,6 @@ public class ApplicationRepo implements PanacheRepository<Application> {
                         .and("status", DeploymentRecord.Status.COMPLETED)
                 );
 
-        PanacheQuery<DeploymentRecord> query2 = DeploymentRecord.find(
-                "application=:application AND status=:status ORDER BY startTime DESC",
-                Parameters
-                        .with("application", application)
-                        .and("status", DeploymentRecord.Status.FAILED)
-        );
-
-        PanacheQuery<DeploymentRecord> query3 = DeploymentRecord.find(
-                "application=:application AND status=:status ORDER BY startTime DESC",
-                Parameters
-                        .with("application", application)
-                        .and("status", DeploymentRecord.Status.CANCELLED)
-        );
-        System.out.println(query.count());
-        System.out.println(query2.count());
-        System.out.println(query3.count());
-
         if (query.count() > 0) {
             LocalDateTime lastTime = query.firstResult().startTime;
             if (lastTime.isBefore(application.lastArchiveChange) || lastTime.isBefore(application.lastConfigChange)) {
@@ -368,5 +352,46 @@ public class ApplicationRepo implements PanacheRepository<Application> {
             }
         }
         return AppState.StageState.UP_TO_DATE;
+    }
+
+    @Transactional
+    public void createDatabaseConnection(String appName, DatabaseConnection dbConn) {
+        Application application = findByName(appName);
+        dbConn.application = application;
+        application.dbConnections.add(dbConn);
+        dbConn.persist();
+    }
+
+    @Transactional
+    public void deleteDatabaseConnection(String appName, String jndiName) {
+        Application application = findByName(appName);
+        PanacheQuery<DatabaseConnection> query = DatabaseConnection.find(
+                "application=:application AND jndiName=:jndiName",
+                Parameters
+                        .with("application", application)
+                        .and("jndiName", jndiName)
+        );
+        DatabaseConnection connection = query.firstResult();
+        application.dbConnections.remove(connection);
+        connection.delete();
+    }
+
+    @Transactional
+    public List<DatabaseConnection> getDatabaseConnections(String appName) {
+        Application application = findByName(appName);
+        List<DatabaseConnection> connections = DatabaseConnection.find(
+                "application=:application",
+                Parameters
+                        .with("application", application)
+        ).list();
+
+        connections.sort(new Comparator<DatabaseConnection>() {
+            @Override
+            public int compare(DatabaseConnection o1, DatabaseConnection o2) {
+                return o1.jndiName.compareTo(o2.jndiName);
+            }
+        });
+
+        return connections;
     }
 }

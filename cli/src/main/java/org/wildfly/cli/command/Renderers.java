@@ -2,6 +2,7 @@ package org.wildfly.cli.command;
 
 import org.wildfly.cli.util.TableRenderer;
 import org.wildfly.managed.common.model.AppArchive;
+import org.wildfly.managed.common.model.DatabaseConnection;
 import org.wildfly.managed.common.value.AppState;
 
 import java.util.List;
@@ -35,6 +36,30 @@ class Renderers {
                         )
                         .output();
 
+            }
+        }
+    }
+
+    static void renderDatabaseConnections(List<DatabaseConnection> connections) {
+        System.out.println("----> " + connections.size());
+        if (connections.size() == 0) {
+            System.out.println(INDENT + "None");
+        } else {
+            TableRenderer outputter = TableRenderer.builder()
+                    .addColumn( 20, "JNDI Name")
+                    .addColumn(20, "Database Name")
+                    .addColumn(15, "User")
+                    .addColumn(30, "URL")
+                    .build();
+            for (DatabaseConnection connection : connections) {
+                outputter.addRow()
+                        .addColumns(
+                                connection.jndiName,
+                                connection.databaseName,
+                                connection.username,
+                                connection.url
+                        )
+                        .output();
             }
         }
     }
