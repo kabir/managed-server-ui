@@ -278,7 +278,16 @@ public class ApplicationResource {
     @POST
     @Path("/{appName}/db")
     public void createDatabaseConnection(String appName, DatabaseConnection dbConn) {
-        applicationRepo.createDatabaseConnection(appName, dbConn);
+        try {
+            applicationRepo.createDatabaseConnection(appName, dbConn);
+        } catch (RuntimeException e) {
+            ExceptionUnwrapper
+                    .create(ConstraintViolationException.class,
+                            () -> new ServerException(Response.Status.CONFLICT, "There is already a database connection with the JNDI name: " + dbConn.jndiName))
+                    .throwServerException(e);
+            throw e;
+        }
+
     }
 
     @DELETE

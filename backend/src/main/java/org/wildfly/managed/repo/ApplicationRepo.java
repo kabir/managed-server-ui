@@ -75,6 +75,10 @@ public class ApplicationRepo implements PanacheRepository<Application> {
             deploymentRecord.application = null;
             deploymentRecord.delete();
         }
+        for (DatabaseConnection connection : app.dbConnections) {
+            connection.application = null;
+            connection.delete();
+        }
         delete("name", name);
     }
 
@@ -356,6 +360,9 @@ public class ApplicationRepo implements PanacheRepository<Application> {
 
     @Transactional
     public void createDatabaseConnection(String appName, DatabaseConnection dbConn) {
+        if (dbConn.jndiName == null || (!dbConn.jndiName.startsWith("java:/") && !dbConn.jndiName.startsWith("java:jboss/"))) {
+            throw new ServerException(Response.Status.NOT_ACCEPTABLE, "JNDI name must start with 'java:/' or 'java:jboss/'.");
+        }
         Application application = findByName(appName);
         dbConn.application = application;
         application.dbConnections.add(dbConn);

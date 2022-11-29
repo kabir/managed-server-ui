@@ -6,10 +6,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.jar.JarFile;
 
 public class ConfigFileInspection {
-    private static final String ROOT_LOCATION = "WEB-INF/classes/META-INF/";
-    private static final String SERVER_CONFIG_XML = ROOT_LOCATION + "server-config.xml";
-    private static final String SERVER_INIT_CLI = ROOT_LOCATION + "server-init.cli";
-    private static final String SERVER_INIT_YML = ROOT_LOCATION + "server-init.yml";
+    public static final String ROOT_LOCATION = "WEB-INF/classes/META-INF/";
+    public static final String SERVER_CONFIG_XML = ROOT_LOCATION + "server-config.xml";
+    public static final String SERVER_INIT_CLI = ROOT_LOCATION + "server-init.cli";
+    public static final String SERVER_INIT_YML = ROOT_LOCATION + "server-init.yml";
 
 
     private final boolean serverConfigXml;

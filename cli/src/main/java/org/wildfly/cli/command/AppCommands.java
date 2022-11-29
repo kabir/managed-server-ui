@@ -463,9 +463,6 @@ public class AppCommands {
             @CommandLine.Option(names = {"-j", "--jndi"}, description = "JNDI name of the datasource.", required = true)
             String jndiName;
 
-            @CommandLine.Option(names = {"-d", "--database"}, description = "Name of the database.", required = true)
-            String dbName;
-
             @CommandLine.Option(names = {"-u", "--user"}, description = "Database user.", required = true)
             String user;
 
@@ -475,18 +472,18 @@ public class AppCommands {
             @CommandLine.Option(names = {"-a", "--url"}, description = "Datasource URL.", required = true)
             String url;
 
+            @CommandLine.Option(names = {"-t", "--type"}, description = "Type of database. Valid values: ${COMPLETION-CANDIDATES}", required = true)
+            DatabaseConnection.Type type;
+
             @Override
             public void run() {
-                System.out.println(jndiName + " " + dbName + " " + user + " " + password + " " + url);
                 ApplicationSelector appSelector = ApplicationSelector.create(cliContext, appName);
                 DatabaseConnection dbConn = new DatabaseConnection();
                 dbConn.jndiName = jndiName;
-                dbConn.databaseName = dbName;
                 dbConn.username = user;
                 dbConn.password = password;
                 dbConn.url = url;
-                // TODO add this via command line
-                dbConn.type = DatabaseConnection.Type.POSTGRES;
+                dbConn.type = type;
                 applicationService().createDatabaseConnection(appSelector.name, dbConn);
                 printlnSuccess("Database connection " + jndiName + " created in application " + appSelector.name);
             }

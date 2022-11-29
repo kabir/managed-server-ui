@@ -11,7 +11,6 @@ import javax.persistence.UniqueConstraint;
 @Entity
 @Table(
         uniqueConstraints = {
-                // Doesn't seem to show up in postgres?
                 @UniqueConstraint(columnNames = {
                         "application_id",
                         "jndiName"})
@@ -25,8 +24,6 @@ public class DatabaseConnection extends PanacheEntity {
 
     public Type type;
 
-    public String databaseName;
-
     public String username;
 
     public String password;
@@ -37,6 +34,16 @@ public class DatabaseConnection extends PanacheEntity {
 
 
     public enum Type {
-        POSTGRES
+        POSTGRES("org.postgresql.jdbc", "org.postgresql.xa.PGXADataSource", "postgresql-driver");
+
+        public final String module;
+        public final String xaDataSourceClass;
+        public final String layer;
+
+        Type(String module, String xaDataSourceClass, String layer) {
+            this.module = module;
+            this.xaDataSourceClass = xaDataSourceClass;
+            this.layer = layer;
+        }
     }
 }

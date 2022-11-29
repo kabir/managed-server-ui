@@ -9,6 +9,8 @@ import io.fabric8.openshift.api.model.Route;
 import io.fabric8.openshift.api.model.RouteList;
 import io.fabric8.openshift.client.OpenShiftClient;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.wildfly.managed.ConfigAdjuster;
+import org.wildfly.managed.ConfigFileInspection;
 import org.wildfly.managed.ServerException;
 import org.wildfly.managed.common.model.AppArchive;
 import org.wildfly.managed.common.model.Application;
@@ -21,8 +23,13 @@ import org.wildfly.managed.repo.ApplicationRepo;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.ws.rs.core.Response;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -30,6 +37,8 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import static org.wildfly.managed.common.util.Constants.SERVER_CONFIG_XML;
 import static org.wildfly.managed.common.util.Constants.SERVER_INIT_CLI;
@@ -92,6 +101,10 @@ public class OpenshiftFacade {
             outputConfigFilesToAppDirectory(appName);
 
             Path appDir = uiPaths.getApplicationDir(appName);
+            new ConfigAdjuster()
+                    .adjustConfig(applicationRepo, appName)
+                    .updateConfigs(appDir);
+
             File tarBall = Packaging.packageFile(appDir, appDir);
             Build build;
             try {
@@ -111,8 +124,8 @@ public class OpenshiftFacade {
                 }
                 try {
                     deleteIfExists(appDir.resolve(SERVER_CONFIG_XML), true);
-                    deleteIfExists(appDir.resolve(SERVER_CONFIG_XML), true);
-                    deleteIfExists(appDir.resolve(SERVER_CONFIG_XML), true);
+                    deleteIfExists(appDir.resolve(SERVER_INIT_CLI), true);
+                    deleteIfExists(appDir.resolve(SERVER_INIT_YML), true);
                 } catch (IOException ignore) {
                     // Won't happen since we swallow it in the deleteIfExists call
                 }
@@ -133,6 +146,22 @@ public class OpenshiftFacade {
     private void outputConfigFilesToAppDirectory(String appName) {
         Application application = applicationRepo.findByName(appName);
         Path appDir = uiPaths.getApplicationDir(appName);
+
+        // Output the archive config files first. If there is a same one in the ApplicationConfigs, that should overwrite
+        List<AppArchive> archives = applicationRepo.listArchivesForApp(appName);
+        for (AppArchive archive : archives) {
+            if (archive.serverConfigXml) {
+                getFileFromArchive(appDir.resolve(archive.fileName), ConfigFileInspection.SERVER_CONFIG_XML);
+            }
+            if (archive.serverInitCli) {
+                getFileFromArchive(appDir.resolve(archive.fileName), ConfigFileInspection.SERVER_INIT_CLI);
+            }
+            if (archive.serverInitYml) {
+                getFileFromArchive(appDir.resolve(archive.fileName), ConfigFileInspection.SERVER_INIT_YML);
+            }
+        }
+
+
         if (application.hasServerConfigXml || application.hasServerInitYml || application.hasServerInitCli) {
             ApplicationConfigs configs = applicationRepo.getConfigFileContents(appName);
             try {
@@ -296,4 +325,32 @@ public class OpenshiftFacade {
         openShiftClient.builds().withLabel("app", appName).delete();
     }
 
+    private void getFileFromArchive(Path archivePath, String name)  {
+        try {
+            ZipInputStream zin = new ZipInputStream(new BufferedInputStream(new FileInputStream(archivePath.toFile())));
+            ZipEntry entry = zin.getNextEntry();
+            while (entry != null) {
+                try {
+                    if (entry.isDirectory()) {
+                        continue;
+                    }
+                    if (entry.getName().equals(name) && !entry.isDirectory()) {
+                        Path path = archivePath.getParent().resolve(name.substring(name.lastIndexOf("/") + 1));
+                        byte[] buffer = new byte[1024];
+                        try (OutputStream out = new BufferedOutputStream(new FileOutputStream(path.toFile()))) {
+                            int len;
+                            while ((len = zin.read(buffer)) > 0) {
+                                out.write(buffer, 0, len);
+                            }
+                        }
+                    }
+                } finally {
+                    zin.closeEntry();
+                    entry = zin.getNextEntry();
+                }
+            }
+        } catch (IOException e) {
+            throw new ServerException(Response.Status.INTERNAL_SERVER_ERROR, "Error unzipping " + name + " from " + archivePath);
+        }
+    }
 }

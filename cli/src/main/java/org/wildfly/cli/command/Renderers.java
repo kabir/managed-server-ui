@@ -46,8 +46,8 @@ class Renderers {
             System.out.println(INDENT + "None");
         } else {
             TableRenderer outputter = TableRenderer.builder()
-                    .addColumn( 20, "JNDI Name")
-                    .addColumn(20, "Database Name")
+                    .addColumn( 25, "JNDI Name")
+                    .addColumn(10, "Type")
                     .addColumn(15, "User")
                     .addColumn(30, "URL")
                     .build();
@@ -55,7 +55,7 @@ class Renderers {
                 outputter.addRow()
                         .addColumns(
                                 connection.jndiName,
-                                connection.databaseName,
+                                connection.type.toString(),
                                 connection.username,
                                 connection.url
                         )

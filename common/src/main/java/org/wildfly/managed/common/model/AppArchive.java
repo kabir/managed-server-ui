@@ -12,7 +12,6 @@ import java.util.Objects;
 @Entity
 @Table(
         uniqueConstraints = {
-                // Doesn't seem to show up in postgres?
                 @UniqueConstraint(columnNames = {
                         "application_id",
                         "fileName"})
