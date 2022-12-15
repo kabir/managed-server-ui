@@ -6,9 +6,8 @@
 #  to do this programmatically once things settle a bit
 
 
-# The env var stored in the secret has hyphens which don't work so well (at least I have no clue how to use them normally)
-# so 'translate' to a more common format
-MANAGED_SERVER_SECRET_TOKEN="$(printenv managed-server-secret-openshiftToken)"
+# We are auto-mounting the service account secret in the Helm chart. It contains the token
+MANAGED_SERVER_SECRET_TOKEN=`cat /var/run/secrets/kubernetes.io/serviceaccount/token`
 
 if [ -z "${MANAGED_SERVER_OPENSHIFT_SERVER}" ]; then
   echo "MANAGED_SERVER_OPENSHIFT_SERVER should point to the server. Exiting."
@@ -26,7 +25,14 @@ fi
 echo "Logging in with oc"
 
 oc login --token="${MANAGED_SERVER_SECRET_TOKEN}" --server="${MANAGED_SERVER_OPENSHIFT_SERVER}"
-echo "Logged in $?"
+loggedin=$?
+echo "Logged in $loggedin"
+
+if [ $loggedin -ne 0 ]; then
+  echo "Login unsuccessful. Exiting."
+fi
+
+
 oc whoami
 echo "Switching to ${MANAGED_SERVER_OPENSHIFT_PROJECT}"
 oc project ${MANAGED_SERVER_OPENSHIFT_PROJECT}

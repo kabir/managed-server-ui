@@ -9,17 +9,18 @@ The latest image of the backend is deployed at https://quay.io/repository/kabirk
 
 We will install this using Helm. First we need to gather some data, the values are
 
-* `TOKEN` - the token to log in to the OpenShift instance. The backend needs this since it is interacting with the OpenShift APIs. This can be obtained from the output of the `Copy login command` in the OpenShift console.
-* `SERVER` - the server as output when figuring out the token
+* `SERVER` - the server as output when figuring out the token. This can be obtained from the output of the `Copy login command` in the OpenShift console.
 * `PROJECT` - the name of the OpenShift project to install the back-end into
 
 Then simply run a `helm install` from this directory:
 ```shell
 helm install managed-server-backend managed-server-backend-0.1.0.tgz \
   --set backend.openshift.server="${SERVER}" \
-  --set backend.openshift.token="${TOKEN}" \
   --set backend.openshift.project="${PROJECT}"
 ```
+
+The Helm chart creates a service account in the project, which is used for authentication with the server. 
+
 -----
 **Note:** On some environments like the Red Hat Developer Sandbox, the token expires regularly so you will have to refresh it in the configuration. If you don't mind starting from scratch, the easiest way is to simply run `helm uninstall managed-server-backend` and then do the above steps again.
 

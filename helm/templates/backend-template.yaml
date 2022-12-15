@@ -2,12 +2,20 @@ apiVersion: v1
 kind: List
 items:
   - apiVersion: v1
-    kind: Secret
+    kind: ServiceAccount
     metadata:
-      name: managed-server-secret
-    type: Opaque
-    stringData:
-      openshiftToken: {{ .Values.backend.openshift.token }}
+      name: managed-server
+  - apiVersion: rbac.authorization.k8s.io/v1
+    kind: RoleBinding
+    metadata:
+      name: managed-server-edit
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: edit
+    subjects:
+      - kind: ServiceAccount
+        name: managed-server
   - apiVersion: image.openshift.io/v1
     kind: ImageStream
     metadata:
@@ -40,6 +48,8 @@ items:
           labels:
             app: managed-server-ui-backend
         spec:
+          serviceAccountName: managed-server
+          automountServiceAccountToken: true
           containers:
             - name: managed-server-ui-backend
               image: managed-server-ui-backend
@@ -64,9 +74,6 @@ items:
                 - prefix: postgresql-secret-
                   secretRef:
                     name: {{ .Values.backend.database.secretName }}
-                - prefix: managed-server-secret-
-                  secretRef:
-                    name: managed-server-secret
               env:
                 - name: QUARKUS_DATASOURCE_JDBC_URL
                   value: jdbc:postgresql://${POSTGRESQL_SERVICE_HOST}:${POSTGRESQL_SERVICE_PORT_POSTGRESQL}/${postgresql-secret-database-name}
