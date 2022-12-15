@@ -80,8 +80,6 @@ items:
                 # TODO: We don't know these - make the user create a Helm chart with them filled in?
                 - name: MANAGED_SERVER_OPENSHIFT_SERVER
                   value: {{ .Values.backend.openshift.server }}
-                - name: MANAGED_SERVER_OPENSHIFT_TOKEN
-                  value: ${managed-server-secret-openshiftToken}
                 - name: MANAGED_SERVER_OPENSHIFT_PROJECT
                   value: {{ .Values.backend.openshift.project }}
 
