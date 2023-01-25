@@ -2,9 +2,11 @@
 
 You might want to simply try the latest WIP from this repository, or you might want to try our your own fixes there.
 
+## Install Postgres
 In both cases you will need a Postgres instance running on OpenShift. To install Postgres, go to your OpenShift console, and select the 'Developer' perspective, and select 'Add' from the
 list on the right. Go to 'Database' and select 'PostgreSQL'. Keep the defaults for everything and install it.
 
+## Install UI Backend
 The latest image of the backend is deployed at https://quay.io/repository/kabirk/managed-server-ui-backend-jvm.
 
 We will install this using Helm. First we need to gather some data, the values are
@@ -26,6 +28,7 @@ The Helm chart creates a service account in the project, which is used for authe
 
 -------
 
+## Get route to application and download the CLI
 Once installed, find the URL used for the application, e.g:
 
 ```shell
@@ -34,7 +37,16 @@ Once installed, find the URL used for the application, e.g:
 NAME                        HOST/PORT             PATH   SERVICES                    PORT    TERMINATION     WILDCARD
 managed-server-ui-backend   this.is.the.address          managed-server-ui-backend   <all>   edge/Redirect   None
 ```
-And then set the server before running the CLI commands, e.g.:
+
+If you don't want to build the CLI from this project yourself, you can download it from the backend, under the `/cli` path. E.g
+
+```shell
+% curl https://managed-server-ui-backend-kkhan1-dev.apps.sandbox-m2.ll9k.p1.openshiftapps.com/cli -o managed-server.cli.jar 
+```
+Note that if you built the server yourself, it will be called `quarkus-run.jar` instead. `quarkus-run.jar` is presently used in the main examples.
+
+
+Then set the server before running the CLI commands, e.g.:
 
 ```shell
 % java -jar target/quarkus-app/quarkus-run.jar server set https://this.is.the.address
