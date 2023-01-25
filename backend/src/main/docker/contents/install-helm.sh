@@ -1,8 +1,17 @@
 #!/bin/sh
 
 
+
+
 appName="${1}"
 helmChartLocation="${2}"
+
+# Temp debugging
+echo "Deploying application ${appName} with chart ${helmChartLocation}"
+echo "Which project are we using:"
+oc project
+echo "Which user is invoking the chart:"
+oc whoami
 
 
 helm list --filter "${appName}$" | grep -q "${appName}" && found=1 || found=0

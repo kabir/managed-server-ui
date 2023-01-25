@@ -72,7 +72,9 @@ public class OpenshiftFacade {
         System.out.println(openShiftClient.currentUser().toString());
 
 
+        System.out.println("=====> Calling Helm to deploy application");
         runScript(INSTALL_HELM_SCRIPT, appName, uiPaths.getTempHelmChart().toString());
+        System.out.println("=====> Called Helm to deploy application");
 
         List<AppArchive> archives = applicationRepo.listArchivesForApp(appName);
         if (archives.size() == 0) {
@@ -229,6 +231,9 @@ public class OpenshiftFacade {
         try {
             int exit = process.waitFor();
             System.out.println("Exit code: " + exit);
+            if (exit != 0) {
+                throw new RuntimeException("Was not able to install Application. Helm chart returned " + exit);
+            }
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
