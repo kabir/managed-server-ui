@@ -68,10 +68,11 @@ public class OpenshiftFacade {
         System.out.println("Project " + openshiftProject);
         // TODO eventually we should install the Helm chart via `helm repository add`
 
-        runScript(INSTALL_HELM_SCRIPT, appName, uiPaths.getTempHelmChart().toString());
-
         System.out.println("=====> Using client to get current user");
         System.out.println(openShiftClient.currentUser().toString());
+
+
+        runScript(INSTALL_HELM_SCRIPT, appName, uiPaths.getTempHelmChart().toString());
 
         List<AppArchive> archives = applicationRepo.listArchivesForApp(appName);
         if (archives.size() == 0) {
